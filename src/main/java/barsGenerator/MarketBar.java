@@ -1,6 +1,7 @@
 package barsGenerator;
 
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 
 public class MarketBar {
@@ -21,7 +22,16 @@ public class MarketBar {
         this.high = high;
         this.low = low;
         this.volume = volume;
-        this.timestamp = lastTimestamp + msInterval;
+        
+        Calendar c1 = Calendar.getInstance();
+        c1.setTime(new Date(lastTimestamp + msInterval));
+
+		if ((c1.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY) || 
+			(Calendar.DAY_OF_WEEK == Calendar.SUNDAY))
+		{
+			lastTimestamp += 172800000;
+		}
+		this.timestamp = lastTimestamp + msInterval;
         this.interest = interest;
         this.trendFollowing= trendFollowing ;
     }
@@ -33,4 +43,12 @@ public class MarketBar {
         					 df.format(new Date(timestamp)), open, high, low, close, 
         					 volume, interest, trendFollowing);
     }
+    public String csvOutput() {
+    	SimpleDateFormat date = new SimpleDateFormat("dd/MM/YYYY");
+    	SimpleDateFormat time = new SimpleDateFormat("HH:mm:00");
+    	Date ts = new Date(timestamp);
+        return String.format("%s,%s,%.2f,%.2f,%.2f,%.2f,%.0f", 
+        					 date.format(ts), time.format(ts), open, high, low, close, volume);
+    }
+
 }

@@ -6,8 +6,16 @@ import java.util.Random;
 
 public class MarketSimulator {
 	private Random rand;
-	ApplicationProperties props;
+	private ApplicationProperties props;
+	final private double EPSILON = 0.00001;
 
+	
+	private boolean inTheRange(double value, double target, double epsilon)
+	{
+		if (epsilon <0) epsilon *= -1;
+		return(Math.abs(value) < Math.abs(target) + epsilon);
+	}
+	
 	public MarketSimulator(ApplicationProperties props)
 	{
 		this.props = props;
@@ -31,11 +39,11 @@ public class MarketSimulator {
 	    	// from the current price. The change should be somewhere in the neighbor of it
 	    	double composedInterest = Math.pow(Math.abs(upright/lastClose), ((double) 1 / (trend.duration - i)));
 	    	
-	    	composedInterest = (composedInterest > trend.maxIntrabarVol ? trend.maxIntrabarVol : composedInterest);
+	    	composedInterest = (composedInterest > Math.abs(trend.maxIntrabarVol) ? Math.abs(trend.maxIntrabarVol) : composedInterest);
 	    	// Based on the period volatility, the intrabar volatility will have more
 	    	// chances to be positive or negative
 	    	double intraBarVol = Math.abs(upright/lastClose);
-	    	if (intraBarVol == 0)
+	    	if (inTheRange(intraBarVol, 0., EPSILON) && (i < trend.duration - 1))
 	    	{
 	    		intraBarVol = trend.volatility / 100 * (rand.nextDouble() + 0.01) ;
 	    		composedInterest = Math.abs(intraBarVol);
@@ -45,7 +53,7 @@ public class MarketSimulator {
 	    		intraBarVol = (Math.abs(intraBarVol) > composedInterest ?  composedInterest : intraBarVol);
 	    	}
 	    	
-	    	if (!trendFollowing && trend.maxTrendsInPeriod > 0)
+	    	if (trend.enableTrends & !trendFollowing && trend.maxTrendsInPeriod > 0)
 	    	{
 	    		if (rand.nextDouble() >= .5)
 	    		{

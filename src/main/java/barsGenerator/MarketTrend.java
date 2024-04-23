@@ -19,7 +19,7 @@ public class MarketTrend {
         this.targetEndPrice = lastBar.close * (1 + volatility * duration / 10);
         this.initialVolume = lastBar.volume;
         this.volumeTrend = props.getVolumeTrend()[run];
-    	this.maxIntrabarVol= props.getMaxIntrabarVol()[run] ;
+    	this.maxIntrabarVol= props.getMaxIntrabarVol()[run] / 100;
         this.enableTrends = props.getEnableTrends()[run];
         this.maxTrendsInPeriod = props.getMaxTrendsInPeriod()[run];
         this.maxBarsInTrend = props.getMaxBarsInTrend()[run];

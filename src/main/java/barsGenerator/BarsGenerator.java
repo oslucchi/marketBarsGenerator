@@ -1,14 +1,22 @@
 package barsGenerator;
 
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 public class BarsGenerator {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws ParseException, FileNotFoundException, UnsupportedEncodingException {
     	ApplicationProperties props = ApplicationProperties.getInstance();
     	MarketSimulator simulator = new MarketSimulator(props);
-    	MarketBar mb = new MarketBar(0, props.getStartPrice(), 0, 0, 0, new Date().getTime(), 0, 0, false);
+    	SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm");
+    	System.out.println(args[0]);
+    	System.out.println(sdf.format(sdf.parse(args[0])));
+    	MarketBar mb = new MarketBar(0, props.getStartPrice(), 0, 0, 0, 
+    								sdf.parse(args[0]).getTime() - props.getInterval(), 0, 0, false);
     	
         List<MarketBar> allBars = new ArrayList<>();
         allBars.add(mb);
@@ -20,6 +28,7 @@ public class BarsGenerator {
         }
         allBars.remove(0);
 	    int idx = 0;
+	    PrintWriter writer = new PrintWriter("/tmp/bars.csv", "UTF-8");
 	    for(int i = 0; i < props.getDuration().length; i++)
 	    {
 	    	System.out.println(
@@ -31,10 +40,13 @@ public class BarsGenerator {
     						  ));
 		    System.out.println(String.format("%-14.14s %10.8s %10.8s %10.8s %10.8s %10.8s %12.12s %6.6s", 
 	                "Time", "Open", "High", "Low", "Close", "Volume", "Applied Vol", "Trend"));
+            System.out.println(allBars.get(idx));
 	    	for(int y = 0; y < props.getDuration()[i]; y++)
 	    	{
-	            System.out.println(allBars.get(idx++));
+	    	    writer.println(allBars.get(idx++).csvOutput());
 	    	}
+    		System.out.println(allBars.get(idx -1 ));
 	    }
+	    writer.close();
     }
 }
