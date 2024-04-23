@@ -22,6 +22,7 @@ public class MarketSimulator {
 	    double targetPrice = lastClose + lastClose * trend.volatility / 100;
 	    boolean trendFollowing = false;
 	    int barsFollowingTrend = 0;
+	    int currentTrendMaBars = (int) (trend.maxBarsInTrend * rand.nextDouble()) + 2;
 	    
 	    for (int i = 0; i < trend.duration; i++) {
 	    	// Get the current distance from the targetPrice
@@ -36,12 +37,14 @@ public class MarketSimulator {
 	    	double intraBarVol = Math.abs(upright/lastClose);
 	    	if (intraBarVol == 0)
 	    	{
-	    		intraBarVol = trend.volatility * (rand.nextDouble() + 0.01) / 100;
+	    		intraBarVol = trend.volatility / 100 * (rand.nextDouble() + 0.01) ;
 	    		composedInterest = Math.abs(intraBarVol);
 	    	}
-//	    	intraBarVol  = rand.nextDouble();
-//	    	intraBarVol = intraBarVol + trend.volatility / 100 * .5;
-	    	intraBarVol = (Math.abs(intraBarVol) > composedInterest ?  composedInterest : intraBarVol);
+	    	else
+	    	{
+	    		intraBarVol = (Math.abs(intraBarVol) > composedInterest ?  composedInterest : intraBarVol);
+	    	}
+	    	
 	    	if (!trendFollowing && trend.maxTrendsInPeriod > 0)
 	    	{
 	    		if (rand.nextDouble() >= .5)
@@ -50,7 +53,7 @@ public class MarketSimulator {
 	    			trendFollowing = true;
 	    		}
 	    	}
-	    	if (trendFollowing && (barsFollowingTrend++ < trend.maxBarsInTrend))
+	    	if (trendFollowing && (barsFollowingTrend++ < currentTrendMaBars))
 	    	{
 	    		if (Math.signum(intraBarVol) != Math.signum(trend.volatility))
 	    		{
@@ -60,8 +63,11 @@ public class MarketSimulator {
 	    	else
 	    	{
     			trendFollowing = false;
+    			currentTrendMaBars = (int) (trend.maxBarsInTrend * rand.nextDouble()) + 2;
+    			barsFollowingTrend = 0;
 	    		intraBarVol *= (upright == 0 ? -1 : Math.signum(upright));  
 	    	}
+	    	intraBarVol += (rand.nextDouble() - .5) * Math.abs(intraBarVol) * .3;
 	    	
 	    	double newPrice = lastClose + lastClose * intraBarVol;
 			double high = Math.max(lastClose, newPrice) + rand.nextDouble() * composedInterest * newPrice;
