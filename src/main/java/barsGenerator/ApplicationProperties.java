@@ -15,12 +15,15 @@ public class ApplicationProperties {
 	private double[] volatility;
 	private double[] volumeTrend; 
 	private double[] maxIntrabarVol;
+	private double[] maxVolHighLow;
 	private boolean[] enableTrends;
 	private int[] maxBarsInTrend;
 	private int[] maxTrendsInPeriod;
 	private double initialVolume;
 	private double startPrice;
 	private long interval;
+	private double probabilityToEnterTrend;
+	private String startDate;
 	
 	public static ApplicationProperties getInstance()
 	{
@@ -93,6 +96,14 @@ public class ApplicationProperties {
 				maxIntrabarVol[i] = Double.parseDouble(values[i].trim());
 			}
 			
+			variable = "maxVolHighLow";
+			values = properties.getProperty("maxVolHighLow").split(",");
+			maxVolHighLow = new double[values.length];
+			for(int i = 0; i < values.length; i++)
+			{
+				maxVolHighLow[i] = Double.parseDouble(values[i].trim());
+			}
+			
 			variable = "enbleTrends";
 			values = properties.getProperty("enbleTrends").split(",");
 			enableTrends = new boolean[values.length];
@@ -125,6 +136,10 @@ public class ApplicationProperties {
 	        startPrice = Double.parseDouble(properties.getProperty("startPrice").trim());
 	        variable = "interval";
 	        interval = Long.parseLong(properties.getProperty("interval").trim()) * 60000;
+	        variable="probabilityToEnterTrend";
+	        probabilityToEnterTrend = Double.parseDouble(properties.getProperty("probabilityToEnterTrend").trim());
+	        variable="startDate";
+	        startDate = properties.getProperty("startDate").trim();
     	}
     	catch(NumberFormatException e)
     	{
@@ -177,4 +192,15 @@ public class ApplicationProperties {
 		return maxBarsInTrend;
 	}
 
+	public double[] getMaxVolHighLow() {
+		return maxVolHighLow;
+	}
+
+	public double getProbabilityToEnterTrend() {
+		return probabilityToEnterTrend;
+	}
+
+	public String getStartDate() {
+		return startDate;
+	}
 }

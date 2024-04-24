@@ -7,87 +7,123 @@ import java.util.Random;
 public class MarketSimulator {
 	private Random rand;
 	private ApplicationProperties props;
-	final private double EPSILON = 0.00001;
+	private MarketTrend mt;
+	private MarketBar mb;
+	
+	private double targetPrice;
+    
+	private boolean trendFollowing = false;
+	private int trendSign;
+	private int barsFollowingTrend;
 
 	
-	private boolean inTheRange(double value, double target, double epsilon)
+	public MarketSimulator()
 	{
-		if (epsilon <0) epsilon *= -1;
-		return(Math.abs(value) < Math.abs(target) + epsilon);
-	}
-	
-	public MarketSimulator(ApplicationProperties props)
-	{
-		this.props = props;
+		props = ApplicationProperties.getInstance();
 		this.rand = new Random(System.currentTimeMillis()); 
 	}
 
-	public List<MarketBar> generateBars(MarketTrend trend) {
-	    List<MarketBar> bars = new ArrayList<>();
-	    double lastClose = trend.startPrice;
-	    double lastVolume = trend.initialVolume;
-	    long timestamp = trend.timestampStart;
-	    double targetPrice = lastClose + lastClose * trend.volatility / 100;
-	    boolean trendFollowing = false;
-	    int barsFollowingTrend = 0;
-	    int currentTrendMaBars = (int) (trend.maxBarsInTrend * rand.nextDouble()) + 2;
-	    
-	    for (int i = 0; i < trend.duration; i++) {
-	    	// Get the current distance from the targetPrice
-	    	double upright = targetPrice - lastClose;
-		    // Calculate what the composed interest should be to get to the target price
-	    	// from the current price. The change should be somewhere in the neighbor of it
-	    	double composedInterest = Math.pow(Math.abs(upright/lastClose), ((double) 1 / (trend.duration - i)));
-	    	
-	    	composedInterest = (composedInterest > Math.abs(trend.maxIntrabarVol) ? Math.abs(trend.maxIntrabarVol) : composedInterest);
-	    	// Based on the period volatility, the intrabar volatility will have more
-	    	// chances to be positive or negative
-	    	double intraBarVol = Math.abs(upright/lastClose);
-	    	if (inTheRange(intraBarVol, 0., EPSILON) && (i < trend.duration - 1))
-	    	{
-	    		intraBarVol = trend.volatility / 100 * (rand.nextDouble() + 0.01) ;
-	    		composedInterest = Math.abs(intraBarVol);
-	    	}
-	    	else
-	    	{
-	    		intraBarVol = (Math.abs(intraBarVol) > composedInterest ?  composedInterest : intraBarVol);
-	    	}
-	    	
-	    	if (trend.enableTrends & !trendFollowing && trend.maxTrendsInPeriod > 0)
-	    	{
-	    		if (rand.nextDouble() >= .5)
-	    		{
-	    			trend.maxTrendsInPeriod--;
-	    			trendFollowing = true;
-	    		}
-	    	}
-	    	if (trendFollowing && (barsFollowingTrend++ < currentTrendMaBars))
-	    	{
-	    		if (Math.signum(intraBarVol) != Math.signum(trend.volatility))
-	    		{
-	    			intraBarVol *= -1;
-	    		}
-	    	}
-	    	else
-	    	{
-    			trendFollowing = false;
-    			currentTrendMaBars = (int) (trend.maxBarsInTrend * rand.nextDouble()) + 2;
-    			barsFollowingTrend = 0;
-	    		intraBarVol *= (upright == 0 ? -1 : Math.signum(upright));  
-	    	}
-	    	intraBarVol += (rand.nextDouble() - .5) * Math.abs(intraBarVol) * .3;
-	    	
-	    	double newPrice = lastClose + lastClose * intraBarVol;
-			double high = Math.max(lastClose, newPrice) + rand.nextDouble() * composedInterest * newPrice;
-			double low = Math.min(lastClose, newPrice) - rand.nextDouble() * composedInterest * newPrice;
-	        double volumeChange = Math.abs((rand.nextGaussian() * trend.volatility / 100)) * 50; // Volume spikes with larger price changes
-	        double volume = lastVolume + volumeChange;
-	        MarketBar mb = new MarketBar(lastClose, newPrice, high, low, volume, timestamp, 
-	        							 props.getInterval(), intraBarVol, trendFollowing);
-	        timestamp = mb.timestamp;
-	        bars.add(mb);
-	        lastClose = newPrice;
- 	    }
-	    return bars;
+	private void evaluateTrendEnter()
+	{
+		if (mt.getMaxTrendsInPeriod() <= 0)
+			return;
+		
+		if (!trendFollowing)
+		{
+			if (rand.nextDouble() > 1 - props.getProbabilityToEnterTrend())
+			{
+				trendFollowing = true;
+				// allow always 40% of the configured bars to be in the trend
+				barsFollowingTrend = (int)(mt.getMaxBarsInTrend() * (.4 + rand.nextDouble() * .6));
+				
+				if (rand.nextDouble() < .5)
+				{
+					trendSign = -1;
+				}
+				else
+				{
+					trendSign = 1;
+				}
+			}
+			else
+			{
+				trendFollowing = false;;
+				trendSign = 0;
+				barsFollowingTrend = 0;
+			}
+		}
+		else
+		{
+			if (--barsFollowingTrend <= 0)
+			{
+				trendFollowing = false;;
+				trendSign = 0;
+				barsFollowingTrend = 0;
+			}
+		}
+	}
+	
+	private double barChange()
+	{
+		// Set the probability of a negative number same as positive;
+		double drift = Math.abs((targetPrice - mb.getClose()) / targetPrice);
+
+		if (drift / Math.abs(mt.getVolatility()) > 1)
+		{
+			drift = (mb.getClose() > targetPrice ? -0.45 : 0.45);
+		}
+		else
+		{
+			if (trendFollowing)
+			{
+				drift = trendSign * .45;
+			}
+			else
+			{
+				if (targetPrice < mb.getClose())
+				{
+					drift *= -1;
+				}
+			}
+		}
+		
+		// Calculating the intrabar volatility
+		double intrabarVol = mt.getMaxIntrabarVol() * (drift + 	(rand.nextDouble() - 0.5));
+		
+		return intrabarVol;
+	}
+	
+	private double calculateVolume()
+	{
+		double volumeChange = (rand.nextDouble() - .5) * 2;
+        return props.getInitialVolume() + volumeChange * props.getInitialVolume();
+	}
+	
+	public List<MarketBar> periodHandler(MarketTrend mt)
+	{
+		List<MarketBar> periodBars = new ArrayList<MarketBar>();
+
+		this.mt = mt;
+		// initializing data for the period to start
+		targetPrice = mt.getStartPrice() + mt.getStartPrice() * mt.getVolatility(); // the target price for this period
+		mb = new MarketBar(mt.getTimestampStart(), props.getInterval(), 0, 0); // the simulated previous makt bar
+		mb.setClose(mt.getStartPrice());
+		
+		for(int i = 0; i < mt.getDuration(); i++)
+		{
+			evaluateTrendEnter();
+			double priceChange = barChange();
+			MarketBar newBar = new MarketBar(mb.getTimestamp(), props.getInterval(), priceChange, trendSign);
+			newBar.setOpen(mb.getClose());
+			newBar.setClose(mb.getClose() + mb.getClose() * priceChange);
+			newBar.setHigh(Math.max(newBar.getOpen(), newBar.getClose()) * (1 + mt.getMaxVolHighLow() / 100 * rand.nextDouble()));
+			newBar.setLow(Math.min(newBar.getOpen(), newBar.getClose()) * (1 - mt.getMaxVolHighLow() / 100 * rand.nextDouble()));
+	        
+	        newBar.setVolume(calculateVolume());
+
+			periodBars.add(newBar);
+			mb = periodBars.get(periodBars.size() - 1);
+		}
+		return periodBars;
 	}
 }
