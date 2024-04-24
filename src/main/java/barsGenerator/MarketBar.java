@@ -123,9 +123,9 @@ public class MarketBar {
 
     public String tradiaOutput() {
     	SimpleDateFormat date = new SimpleDateFormat("dd/MM/YYYY");
-    	SimpleDateFormat time = new SimpleDateFormat("HH:mm");
+    	SimpleDateFormat time = new SimpleDateFormat("HH:mm:00");
     	Date ts = new Date(timestamp);
-        return String.format("%s %s,%.2f,%.2f,%.2f,%.2f,%.0f", 
+        return String.format("%s,%s,%.2f,%.2f,%.2f,%.2f,%.0f", 
         					 date.format(ts), time.format(ts), open, high, low, close, volume);
     }
 }

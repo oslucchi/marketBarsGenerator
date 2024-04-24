@@ -1,7 +1,6 @@
 package barsGenerator;
 
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 
 public class MarketTrend {
     private int duration; // how many bars in the period
@@ -24,8 +23,6 @@ public class MarketTrend {
 	    this.enableTrends = props.getEnableTrends()[run];
 	    this.maxTrendsInPeriod = props.getMaxTrendsInPeriod()[run];
 	    this.maxBarsInTrend = props.getMaxBarsInTrend()[run];
-	    SimpleDateFormat sdf = new SimpleDateFormat("dd/mm/yyyy HH:MM");
-	    timestampStart = sdf.parse(props.getStartDate()).getTime();
 	}
 
 	public int getDuration() {
@@ -66,5 +63,9 @@ public class MarketTrend {
 
 	public long getTimestampStart() {
 		return timestampStart;
+	}
+	
+	public void setTimestampStart(long timestampStart) {
+		this.timestampStart = timestampStart;
 	}
 }
