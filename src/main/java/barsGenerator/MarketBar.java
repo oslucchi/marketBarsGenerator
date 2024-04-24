@@ -110,6 +110,7 @@ public class MarketBar {
         					 df.format(new Date(timestamp)), open, high, low, close, 
         					 volume, interest, trendFollowing);
     }
+	
     public String csvOutput() {
     	SimpleDateFormat date = new SimpleDateFormat("dd/MM/YYYY");
     	SimpleDateFormat time = new SimpleDateFormat("HH:mm");
@@ -118,5 +119,13 @@ public class MarketBar {
         					 date.format(ts), time.format(ts), open, high, low, close, volume, intrabarVol, trendFollowing)
         					.replace(",", ";")
         					.replace(".", ",");
+    }
+
+    public String tradiaOutput() {
+    	SimpleDateFormat date = new SimpleDateFormat("dd/MM/YYYY");
+    	SimpleDateFormat time = new SimpleDateFormat("HH:mm");
+    	Date ts = new Date(timestamp);
+        return String.format("%s %s,%.2f,%.2f,%.2f,%.2f,%.0f", 
+        					 date.format(ts), time.format(ts), open, high, low, close, volume);
     }
 }

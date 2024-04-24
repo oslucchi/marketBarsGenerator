@@ -31,7 +31,8 @@ public class BarsGenerator {
         }
         allBars.remove(0);
 	    int idx = 0;
-	    PrintWriter writer = new PrintWriter("/tmp/bars.csv", "UTF-8");
+	    PrintWriter tradiaWriter = new PrintWriter("/tmp/tradiaBars.csv", "UTF-8");
+	    PrintWriter localWriter = new PrintWriter("/tmp/bars.csv", "UTF-8");
 	    for(int i = 0; i < props.getDuration().length; i++)
 	    {
 	    	System.out.println(
@@ -46,10 +47,12 @@ public class BarsGenerator {
             System.out.println(allBars.get(idx));
 	    	for(int y = 0; y < props.getDuration()[i]; y++)
 	    	{
-	    	    writer.println(allBars.get(idx++).csvOutput());
+	    	    localWriter.println(allBars.get(idx).csvOutput());
+	    	    tradiaWriter.println(allBars.get(idx++).tradiaOutput());
 	    	}
     		System.out.println(allBars.get(idx -1 ));
 	    }
-	    writer.close();
+	    localWriter.close();
+	    tradiaWriter.close();
     }
 }
