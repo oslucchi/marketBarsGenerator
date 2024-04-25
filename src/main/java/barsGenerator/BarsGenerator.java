@@ -1,11 +1,13 @@
 package barsGenerator;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class BarsGenerator {
@@ -13,8 +15,9 @@ public class BarsGenerator {
     	ApplicationProperties props = ApplicationProperties.getInstance();
     	MarketSimulator simulator = new MarketSimulator();
     	SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm");
-    	System.out.println(props.getStartDate());
-    	System.out.println(sdf.format(sdf.parse(props.getStartDate())));
+
+    	System.out.println("Simulation startin on date: " + props.getStartDate());
+    	System.out.println("Writing results in: " + System.getProperty("user.dir"));
     	MarketBar mb = new MarketBar(sdf.parse(props.getStartDate()).getTime() - props.getInterval(), 0, 0, 0);
     	mb.setClose(props.getStartPrice());
     	
@@ -30,8 +33,11 @@ public class BarsGenerator {
         }
         allBars.remove(0);
 	    int idx = 0;
-	    PrintWriter tradiaWriter = new PrintWriter("/tmp/tradiaBars.csv", "UTF-8");
-	    PrintWriter localWriter = new PrintWriter("/tmp/bars.csv", "UTF-8");
+	    String pathToSave = System.getProperty("user.dir") + 
+				    File.separator + "output" + File.separator;
+	    String runExtension = new SimpleDateFormat("yyMMdd_HHmmss_").format(new Date());
+	    PrintWriter tradiaWriter = new PrintWriter(pathToSave + runExtension + "tradiaBars.csv", "UTF-8");
+	    PrintWriter localWriter = new PrintWriter(pathToSave + runExtension + "bars.csv", "UTF-8");
 	    for(int i = 0; i < props.getDuration().length; i++)
 	    {
 	    	System.out.println(
