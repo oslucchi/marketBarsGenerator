@@ -15,6 +15,7 @@ public class MarketSimulator {
 	private boolean trendFollowing = false;
 	private int trendSign;
 	private int barsFollowingTrend;
+	private double directionToGo = 1;
 
 	
 	public MarketSimulator()
@@ -25,6 +26,8 @@ public class MarketSimulator {
 
 	private void evaluateTrendEnter()
 	{
+		directionToGo = Math.signum(targetPrice - mb.getClose());
+
 		if (mt.getMaxTrendsInPeriod() <= 0)
 			return;
 		
@@ -35,8 +38,8 @@ public class MarketSimulator {
 				trendFollowing = true;
 				// allow always 40% of the configured bars to be in the trend
 				barsFollowingTrend = (int)(mt.getMaxBarsInTrend() * (.4 + rand.nextDouble() * .6));
-				
-				if (rand.nextDouble() < .5)
+				double trendDirection = rand.nextDouble() -.5 + (directionToGo > 0 ? .3 : -.3);
+				if (trendDirection < 0)
 				{
 					trendSign = -1;
 				}
@@ -63,32 +66,33 @@ public class MarketSimulator {
 		}
 	}
 	
-	private double barChange()
+	private double barChange(int run)
 	{
 		// Set the probability of a negative number same as positive;
-		double drift = Math.abs((targetPrice - mb.getClose()) / targetPrice);
+		double currentVolatility = Math.abs((targetPrice - mb.getClose()) / targetPrice);
+		double currentVSExpectedVolatilityRatio = currentVolatility / Math.abs(mt.getVolatility());
+		double volatilityAdjustment = 0; // will help shifting the probability of up and down towards the expected direction
 
-		if (drift / Math.abs(mt.getVolatility()) > 1)
+		if (currentVSExpectedVolatilityRatio > 1)
 		{
-			drift = (mb.getClose() > targetPrice ? -0.45 : 0.45);
+			currentVSExpectedVolatilityRatio = 1;
+			volatilityAdjustment = 0.45 * directionToGo;
 		}
-		else
+		
+		if (trendFollowing)
 		{
-			if (trendFollowing)
-			{
-				drift = trendSign * .45;
-			}
-			else
-			{
-				if (targetPrice < mb.getClose())
-				{
-					drift *= -1;
-				}
-			}
+			volatilityAdjustment = trendSign * .25;
+			directionToGo = trendSign;
 		}
 		
 		// Calculating the intrabar volatility
-		double intrabarVol = mt.getMaxIntrabarVol() * (drift + 	(rand.nextDouble() - 0.5));
+		double randomVol = volatilityAdjustment + rand.nextDouble() - 0.5;
+		double changeWidth = 1; 
+		if (Math.signum(randomVol) != directionToGo)
+		{
+			changeWidth -= (Math.pow(11, currentVSExpectedVolatilityRatio) - .95) / 10; 
+		}
+		double intrabarVol = mt.getMaxIntrabarVol() * changeWidth * randomVol;
 		
 		return intrabarVol;
 	}
@@ -112,7 +116,7 @@ public class MarketSimulator {
 		for(int i = 0; i < mt.getDuration(); i++)
 		{
 			evaluateTrendEnter();
-			double priceChange = barChange();
+			double priceChange = barChange(i);
 			MarketBar newBar = new MarketBar(mb.getTimestamp(), props.getInterval(), priceChange, trendSign);
 			newBar.setOpen(mb.getClose());
 			newBar.setClose(mb.getClose() + mb.getClose() * priceChange);
