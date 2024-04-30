@@ -1,17 +1,18 @@
 package barsGenerator;
 
 import java.io.File;
-import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
+
 public class BarsGenerator {
-    public static void main(String[] args) throws ParseException, FileNotFoundException, UnsupportedEncodingException {
+    public static void main(String[] args) throws ParseException, IOException, InvalidFormatException {
     	ApplicationProperties props = ApplicationProperties.getInstance();
     	MarketSimulator simulator = new MarketSimulator();
     	SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm");
@@ -22,6 +23,7 @@ public class BarsGenerator {
     	mb.setClose(props.getStartPrice());
     	
         List<MarketBar> allBars = new ArrayList<>();
+        List<MarketTrend> periodTrends = new ArrayList<MarketTrend>();
         allBars.add(mb);
         for(int i = 0; i < props.getTotalPeriods(); i++)
         {
@@ -30,14 +32,46 @@ public class BarsGenerator {
             mt.setStartPrice(allBars.get(allBars.size() - 1).getClose());
 	        List<MarketBar> bars = simulator.periodHandler(mt);
 	        allBars.addAll(bars);
+	        periodTrends.add(mt);
         }
         allBars.remove(0);
-	    int idx = 0;
 	    String pathToSave = System.getProperty("user.dir") + 
 				    File.separator + "output" + File.separator;
 	    String runExtension = new SimpleDateFormat("yyMMdd_HHmmss_").format(new Date());
+        ExcelOutputHandler excel = new ExcelOutputHandler(runExtension);
+
+	    excel.writeHeaderRows(periodTrends);
+	    excel.writeDataRows(allBars);
+	    excel.writeChanges();
+	    
+        PrintWriter localWriter = new PrintWriter(pathToSave + runExtension + "bars.csv", "UTF-8");
+        String sep = "";
+	    int idx = 0;
+	    for(MarketTrend mt : periodTrends)
+	    {
+    	    localWriter.print((sep + mt.getDuration()).replace(".", ","));
+    	    sep = "; ";
+	    }
+	    localWriter.println("");
+	    sep = "";
+	    for(MarketTrend mt : periodTrends)
+	    {
+    	    localWriter.print((sep + mt.getVolatility()).replace(".", ","));
+    	    sep = "; ";
+	    }
+	    localWriter.println("");
+	    sep = "";
+	    for(MarketTrend mt : periodTrends)
+	    {
+    	    localWriter.print((sep + mt.getMaxTrendsInPeriod() + "; " + mt.getMaxBarsInTrend()).replace(".", ","));
+    	    sep = "; ";
+	    }
+	    for(int i = 0; i < 8; i++)
+    	{
+	    	localWriter.println("");
+    	}
+	    
 	    PrintWriter tradiaWriter = new PrintWriter(pathToSave + runExtension + "tradiaBars.csv", "UTF-8");
-	    PrintWriter localWriter = new PrintWriter(pathToSave + runExtension + "bars.csv", "UTF-8");
 	    for(int i = 0; i < props.getDuration().length; i++)
 	    {
 	    	System.out.println(

@@ -16,28 +16,38 @@ public class MarketSimulator {
 	private int trendSign;
 	private int barsFollowingTrend;
 	private double directionToGo = 1;
+	private int trendsInPeriod = 0;
 
 	
 	public MarketSimulator()
 	{
 		props = ApplicationProperties.getInstance();
 		this.rand = new Random(System.currentTimeMillis()); 
+		trendsInPeriod = 0;
+		barsFollowingTrend = 0;
 	}
 
 	private void evaluateTrendEnter()
 	{
 		directionToGo = Math.signum(targetPrice - mb.getClose());
 
-		if (mt.getMaxTrendsInPeriod() <= 0)
+		if (trendsInPeriod >= mt.getMaxTrendsInPeriod())
+		{
+			trendFollowing = false;;
+			trendSign = 0;
+			barsFollowingTrend = 0;
 			return;
+		}
 		
 		if (!trendFollowing)
 		{
 			if (rand.nextDouble() > 1 - props.getProbabilityToEnterTrend())
 			{
+				trendsInPeriod++; 
 				trendFollowing = true;
-				// allow always 40% of the configured bars to be in the trend
+				// allow always at least 40% of the max configured bars to be in the trend
 				barsFollowingTrend = (int)(mt.getMaxBarsInTrend() * (.4 + rand.nextDouble() * .6));
+				mt.setBarsFollowingTrend(mt.getBarsFollowingTrend() + barsFollowingTrend);
 				double trendDirection = rand.nextDouble() -.5 + (directionToGo > 0 ? .3 : -.3);
 				if (trendDirection < 0)
 				{
@@ -50,7 +60,6 @@ public class MarketSimulator {
 			}
 			else
 			{
-				trendFollowing = false;;
 				trendSign = 0;
 				barsFollowingTrend = 0;
 			}
@@ -112,6 +121,7 @@ public class MarketSimulator {
 		targetPrice = mt.getStartPrice() + mt.getStartPrice() * mt.getVolatility(); // the target price for this period
 		mb = new MarketBar(mt.getTimestampStart(), props.getInterval(), 0, 0); // the simulated previous makt bar
 		mb.setClose(mt.getStartPrice());
+		trendsInPeriod = 0;
 		
 		for(int i = 0; i < mt.getDuration(); i++)
 		{
@@ -128,6 +138,8 @@ public class MarketSimulator {
 			periodBars.add(newBar);
 			mb = periodBars.get(periodBars.size() - 1);
 		}
+		mt.setMaxTrendsInPeriod(trendsInPeriod);
+		
 		return periodBars;
 	}
 }

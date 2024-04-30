@@ -13,7 +13,6 @@ public class ApplicationProperties {
 	private int totalPeriods = 1;
 	private int[] duration;
 	private double[] volatility;
-	private double[] volumeTrend; 
 	private double[] maxIntrabarVol;
 	private double[] maxVolHighLow;
 	private boolean[] enableTrends;
@@ -78,14 +77,6 @@ public class ApplicationProperties {
 			for(int i = 0; i < values.length; i++)
 			{
 				volatility[i] = Double.parseDouble(values[i].trim());
-			}
-			
-			variable = "volumeTrend";
-			values = properties.getProperty("volumeTrend").split(",");
-			volumeTrend = new double[values.length];
-			for(int i = 0; i < values.length; i++)
-			{
-				volumeTrend[i] = Double.parseDouble(values[i].trim());
 			}
 			
 			variable = "maxIntrabarVol";
@@ -154,10 +145,6 @@ public class ApplicationProperties {
 
 	public double[] getVolatility() {
 		return volatility;
-	}
-
-	public double[] getVolumeTrend() {
-		return volumeTrend;
 	}
 
 	public double[] getMaxIntrabarVol() {

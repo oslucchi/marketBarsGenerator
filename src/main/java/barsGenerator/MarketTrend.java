@@ -11,6 +11,7 @@ public class MarketTrend {
 	private boolean enableTrends; // is the period subject to trends
 	private int maxTrendsInPeriod; // how many trends should we see at max in the period
 	private int maxBarsInTrend;  // how many bars max when a trend starts
+	private int barsFollowingTrend;
 	private long timestampStart; // start time for the period
 	
 	public MarketTrend(int run) throws ParseException
@@ -23,6 +24,7 @@ public class MarketTrend {
 	    this.enableTrends = props.getEnableTrends()[run];
 	    this.maxTrendsInPeriod = props.getMaxTrendsInPeriod()[run];
 	    this.maxBarsInTrend = props.getMaxBarsInTrend()[run];
+	    this.barsFollowingTrend = 0;
 	}
 
 	public int getDuration() {
@@ -67,5 +69,17 @@ public class MarketTrend {
 	
 	public void setTimestampStart(long timestampStart) {
 		this.timestampStart = timestampStart;
+	}
+
+	public void setMaxTrendsInPeriod(int maxTrendsInPeriod ) {
+		this.maxTrendsInPeriod = maxTrendsInPeriod;
+	}
+
+	public void setBarsFollowingTrend(int barsFollowingTrend) {
+		this.barsFollowingTrend = barsFollowingTrend;
+	}
+
+	public int getBarsFollowingTrend() {
+		return barsFollowingTrend;
 	}
 }
