@@ -31,13 +31,13 @@ public class MarketSimulator {
 	{
 		directionToGo = Math.signum(targetPrice - mb.getClose());
 
-		if (trendsInPeriod >= mt.getMaxTrendsInPeriod())
-		{
-			trendFollowing = false;;
-			trendSign = 0;
-			barsFollowingTrend = 0;
-			return;
-		}
+//		if (trendsInPeriod >= mt.getMaxTrendsInPeriod())
+//		{
+//			trendFollowing = false;;
+//			trendSign = 0;
+//			barsFollowingTrend = 0;
+//			return;
+//		}
 		
 		if (!trendFollowing)
 		{
@@ -48,7 +48,7 @@ public class MarketSimulator {
 				// allow always at least 40% of the max configured bars to be in the trend
 				barsFollowingTrend = (int)(mt.getMaxBarsInTrend() * (.4 + rand.nextDouble() * .6));
 				mt.setBarsFollowingTrend(mt.getBarsFollowingTrend() + barsFollowingTrend);
-				double trendDirection = rand.nextDouble() -.5 + (directionToGo > 0 ? .3 : -.3);
+				double trendDirection = rand.nextDouble() -.5 + (directionToGo > 0 ? .1 : -.1);
 				if (trendDirection < 0)
 				{
 					trendSign = -1;
