@@ -6,24 +6,27 @@ import java.util.Properties;
 
 import org.apache.log4j.Logger;
 
+import barsGenerator.Block.Trend;
+
 public class ApplicationProperties {
 	private static ApplicationProperties instance = null;
 	final Logger log = Logger.getLogger(this.getClass());
 	
-	private int totalPeriods = 1;
-	private int[] duration;
-	private double[] volatility;
-	private double[] maxIntrabarVol;
-	private double[] maxVolHighLow;
-	private boolean[] enableTrends;
-	private int[] maxBarsInTrend;
-	private int[] maxTrendsInPeriod;
-	private double initialVolume;
-	private double startPrice;
-	private long interval;
-	private double probabilityToEnterTrend;
-	private String startDate;
-	
+	private int numOfBlocks = 6;
+	private int	maxBarSize = 100;
+	private int barsIntervalInMinutes = 30;
+	private int initialVolume;
+	private double probabilityToEnterTrend = .08;
+	private String startDate = "04/10/2021 00:00";
+	private double marketOpenedHours = 24;
+	private int totalNumberOfPeriodsToGenerate = 6;
+	private boolean blocksSequenceRandom = false;
+	private int[] blocksSequence = {1, 2, 3, 4, 5, 6};
+	private double startPrice = 1000;
+	private double[] barsShadow_numOfBarsPercentage = {.10, .80, .95, .99, 1};
+	private double[] barsShadow_averageBarSizePercentage = {.05, .30, .04, .70, 1.00};
+	private Block[] blocks;
+
 	public static ApplicationProperties getInstance()
 	{
 		if (instance == null)
@@ -63,74 +66,83 @@ public class ApplicationProperties {
     	
 		try
     	{
-			variable = "duration";
-			values = properties.getProperty("duration").split(",");
-			duration = new int[values.length];
-			for(int i = 0; i < values.length; i++)
-			{
-				duration[i] = Integer.parseInt(values[i].trim());
-			}
-			
-			variable = "volatility";
-			values = properties.getProperty("volatility").split(",");
-			volatility = new double[values.length];
-			for(int i = 0; i < values.length; i++)
-			{
-				volatility[i] = Double.parseDouble(values[i].trim());
-			}
-			
-			variable = "maxIntrabarVol";
-			values = properties.getProperty("maxIntrabarVol").split(",");
-			maxIntrabarVol = new double[values.length];
-			for(int i = 0; i < values.length; i++)
-			{
-				maxIntrabarVol[i] = Double.parseDouble(values[i].trim());
-			}
-			
-			variable = "maxVolHighLow";
-			values = properties.getProperty("maxVolHighLow").split(",");
-			maxVolHighLow = new double[values.length];
-			for(int i = 0; i < values.length; i++)
-			{
-				maxVolHighLow[i] = Double.parseDouble(values[i].trim());
-			}
-			
-			variable = "enbleTrends";
-			values = properties.getProperty("enbleTrends").split(",");
-			enableTrends = new boolean[values.length];
-			for(int i = 0; i < values.length; i++)
-			{
-				enableTrends[i] = Boolean.parseBoolean(values[i].trim());
-			}
-
-			variable = "maxTrendsInPeriod";
-			values = properties.getProperty("maxTrendsInPeriod").split(",");
-			maxTrendsInPeriod = new int[values.length];
-			for(int i = 0; i < values.length; i++)
-			{
-				maxTrendsInPeriod[i] = Integer.parseInt(values[i].trim());
-			}
-			
-			variable = "maxBarsInTrend";
-			values = properties.getProperty("maxBarsInTrend").split(",");
-			maxBarsInTrend = new int[values.length];
-			for(int i = 0; i < values.length; i++)
-			{
-				maxBarsInTrend[i] = Integer.parseInt(values[i].trim());
-			}
-			
-			variable = "totalPeriods";
-			totalPeriods = Integer.parseInt(properties.getProperty("totalPeriods").trim());
-			variable = "initialVolume";
-			initialVolume = Integer.parseInt(properties.getProperty("initialVolume").trim());
-	        variable = "startPrice";
+			variable = "numOfBlocks";
+			numOfBlocks = Integer.parseInt(properties.getProperty("numOfBlocks").trim());
+			variable = "barsIntervalInMinutes";
+			barsIntervalInMinutes = Integer.parseInt(properties.getProperty("barsIntervalInMinutes").trim());
+			variable = "maxBarSize";
+			maxBarSize = Integer.parseInt(properties.getProperty("maxBarSize").trim());
+//			variable = "initialVolume";
+//			initialVolume = Integer.parseInt(properties.getProperty("initialVolume").trim());
+			variable = "startPrice";
 	        startPrice = Double.parseDouble(properties.getProperty("startPrice").trim());
-	        variable = "interval";
-	        interval = Long.parseLong(properties.getProperty("interval").trim()) * 60000;
-	        variable="probabilityToEnterTrend";
+	        variable = "marketOpenedHours";
+	        marketOpenedHours = Double.parseDouble(properties.getProperty("marketOpenedHours").trim()) / 100;
+	        variable = "probabilityToEnterTrend";
 	        probabilityToEnterTrend = Double.parseDouble(properties.getProperty("probabilityToEnterTrend").trim());
-	        variable="startDate";
+	        variable = "totalNumberOfPeriodsToGenerate";
+	        totalNumberOfPeriodsToGenerate = Integer.parseInt(properties.getProperty("totalNumberOfPeriodsToGenerate").trim());
+	        variable = "startDate";
 	        startDate = properties.getProperty("startDate").trim();
+	        variable = "blocksSequenceRandom";
+	        blocksSequenceRandom = Boolean.parseBoolean(properties.getProperty("startDate").trim());
+	        
+	        variable = "blocksSequence";
+			values = properties.getProperty("blocksSequence").split(",");
+			blocksSequence = new int[values.length];
+			for(int i = 0; i < values.length; i++)
+			{
+				blocksSequence[i] = Integer.parseInt(values[i].trim());
+			}
+			
+			variable = "barsShadow_numOfBarsPercentage";
+			values = properties.getProperty("barsShadow.numOfBarsPercentage").split(",");
+			barsShadow_numOfBarsPercentage = new double[values.length];
+			for(int i = 0; i < values.length; i++)
+			{
+				barsShadow_numOfBarsPercentage[i] = Double.parseDouble(values[i].trim());
+			}
+			
+			variable = "barsShadow_averageBarSizePercentage";
+			values = properties.getProperty("barsShadow.averageBarSizePercentage").split(",");
+			barsShadow_averageBarSizePercentage = new double[values.length];
+			for(int i = 0; i < values.length; i++)
+			{
+				barsShadow_averageBarSizePercentage[i] = Double.parseDouble(values[i].trim());
+			}
+			
+			blocks = new Block[numOfBlocks];
+			for(int i = 1; i <= numOfBlocks; i++)
+			{
+		        variable = "B" + i + ".numOfTrendsInBlock";
+		        int iValue = Integer.parseInt(properties.getProperty(variable).trim());
+		        variable = "B" + i + ".maxIntrabarVol";
+		        double dValue = Integer.parseInt(properties.getProperty(variable).trim());
+				blocks[i - 1] = new Block(iValue, dValue);
+				blocks[i - 1].pushTrend(blocks[i - 1].new Trend(), 0);
+				for(int y = 1; y <= iValue; y++)
+				{
+					Trend trend = blocks[i - 1].new Trend();
+			        variable = "B" + i + ".T" + y +".duration";
+			        trend.duration = Integer.parseInt(properties.getProperty(variable).trim());
+			        
+			        variable = "B" + i + ".T" + y +".deltaPoints";
+			        trend.deltaPoints = Integer.parseInt(properties.getProperty(variable).trim());
+			        
+			        variable = "B" + i + ".T" + y +".enableMiniTrends";
+			        trend.enableMiniTrends = Boolean.parseBoolean(properties.getProperty(variable).trim());
+			        
+			        variable = "B" + i + ".T" + y +".maxBarPerTrend";
+			        trend.maxBarPerTrend = Integer.parseInt(properties.getProperty(variable).trim());
+			        					
+			        variable = "B" + i + ".T" + y +".minBarPerTrend";
+			        trend.minBarPerTrend = Integer.parseInt(properties.getProperty(variable).trim());
+			        
+			        blocks[i - 1].pushTrend(trend, y);
+				}
+				
+			}
+			
     	}
     	catch(NumberFormatException e)
     	{
@@ -139,48 +151,20 @@ public class ApplicationProperties {
     	}		
 	}
 
-	public int[] getDuration() {
-		return duration;
+	public int getNumOfBlocks() {
+		return numOfBlocks;
 	}
 
-	public double[] getVolatility() {
-		return volatility;
+	public int getBarsIntervalInMinutes() {
+		return barsIntervalInMinutes;
 	}
 
-	public double[] getMaxIntrabarVol() {
-		return maxIntrabarVol;
+	public int getMaxBarSize() {
+		return maxBarSize;
 	}
 
-	public boolean[] getEnableTrends() {
-		return enableTrends;
-	}
-
-	public int[] getMaxTrendsInPeriod() {
-		return maxTrendsInPeriod;
-	}
-
-	public double getInitialVolume() {
+	public int getInitialVolume() {
 		return initialVolume;
-	}
-
-	public double getStartPrice() {
-		return startPrice;
-	}
-
-	public long getInterval() {
-		return interval;
-	}
-
-	public int getTotalPeriods() {
-		return totalPeriods;
-	}
-
-	public int[] getMaxBarsInTrend() {
-		return maxBarsInTrend;
-	}
-
-	public double[] getMaxVolHighLow() {
-		return maxVolHighLow;
 	}
 
 	public double getProbabilityToEnterTrend() {
@@ -190,4 +174,37 @@ public class ApplicationProperties {
 	public String getStartDate() {
 		return startDate;
 	}
+
+	public double getMarketOpenedHours() {
+		return marketOpenedHours;
+	}
+
+	public int getTotalNumberOfPeriodsToGenerate() {
+		return totalNumberOfPeriodsToGenerate;
+	}
+
+	public boolean isBlocksSequenceRandom() {
+		return blocksSequenceRandom;
+	}
+
+	public int[] getBlocksSequence() {
+		return blocksSequence;
+	}
+
+	public double getStartPrice() {
+		return startPrice;
+	}
+
+	public double[] getBarsShadowNumOfBarsPercentage() {
+		return barsShadow_numOfBarsPercentage;
+	}
+
+	public double[] getBarsShadowAverageBarSizePercentage() {
+		return barsShadow_averageBarSizePercentage;
+	}
+
+	public Block getBlock(int index) {
+		return blocks[index];
+	}
+	
 }
