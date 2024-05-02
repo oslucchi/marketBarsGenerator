@@ -4,10 +4,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import org.apache.log4j.Logger;
+
 import barsGenerator.Block.InnerTrend;
 import barsGenerator.Block.Trend;
 
 public class MarketSimulator {
+	final Logger log = Logger.getLogger(this.getClass());
+
 	private Random rand;
 	private ApplicationProperties props;
 	private MarketBar previousBar, currentBar;
@@ -46,7 +50,14 @@ public class MarketSimulator {
 		}
 		else
 		{
-			directionToGo = trendCur.direction; // keep the preferred direction towards the direction stated by the trend
+			if (trendCur.direction == 0)
+			{
+				directionToGo = Math.signum(trendCur.targetPrice - previousBar.getClose()); // keep the focus to the target
+			}
+			else
+			{
+				directionToGo = trendCur.direction;
+			}
 			forceRebound = false;
 		}
 		
@@ -110,10 +121,10 @@ public class MarketSimulator {
 				InnerTrend iTrend = trendCur.innerTrends.get(trendCur.innerTrends.size() - 1);
 				iTrend.numOfBars = iTrend.numOfBars - barsFollowingTrend + 1;
 				trendFollowing = false;
-				trendSign = 0;
 				barsFollowingTrend = 0;
 			}
-
+			trendSign = (trendCur.direction != 0 ? trendCur.direction : 
+						 (int) Math.signum(trendCur.targetPrice - previousBar.getClose()));
 		}
 	}
 	
@@ -125,7 +136,7 @@ public class MarketSimulator {
 		if (forceRebound)
 		{
 			random += directionToGo * .5;
-			System.out.println(String.format("Bar %d - Rebound forced as %6.4f. open %8.2f - target %8.2f - last close %8.2f - last open %8.2f", 
+			log.trace(String.format("Bar %d - Rebound forced as %6.4f. open %8.2f - target %8.2f - last close %8.2f - last open %8.2f", 
 					trendCur.currentBar,  
 					random,
 					  trendCur.openPrice,
@@ -133,6 +144,10 @@ public class MarketSimulator {
 					  previousBar.getOpen(),
 					  previousBar.getClose()
 					));
+		}
+		else if (approachingEndOfTrend)
+		{
+			random = random + trendSign * .5;
 		}
 		else
 		{
@@ -196,8 +211,8 @@ public class MarketSimulator {
 			trendCur.currentBar = 0;
 			approachingEndOfTrend = false;
 
-			System.out.println("*** Trend " + y);
-			for(int i = 0; i < trendCur.duration; i++)
+			log.trace("*** Trend " + y);
+			for(int i = 0; i < trendCur.duration - 1; i++)
 			{
 				if (i > trendCur.duration - trendCur.duration * props.getConsiderApproachingEndOfTrend())
 				{
@@ -244,6 +259,22 @@ public class MarketSimulator {
 				blockBars.add(currentBar);
 				previousBar = currentBar;
 			}
+			currentBar = new MarketBar(previousBar.getTimestamp(), props.getBarsIntervalInMinutes() * 60000, 0, 0);
+			currentBar.setOpen(previousBar.getClose()); // the openPrice is set to the last close price
+			currentBar.setClose(trendCur.targetPrice); // the openPrice is set to the last close price
+			double barSize = Math.abs(currentBar.getClose() - currentBar.getOpen());
+
+			double shadowSize = calculateShadowSize();
+			currentBar.setHigh(calculateHigh(shadowSize, barSize));
+			if (!props.getSameHighAndLowDepth())
+			{
+				shadowSize = calculateShadowSize();
+			}
+			currentBar.setLow(calculateLow(shadowSize, barSize));
+			currentBar.setVolume(calculateVolume());
+			blockBars.add(currentBar);
+			previousBar = currentBar;
+			
 			trendPrev = trendCur;
 			trendFollowing = false;
 		}

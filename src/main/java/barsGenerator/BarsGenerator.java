@@ -9,12 +9,15 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import org.apache.log4j.Logger;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 
 import barsGenerator.Block.Trend;
 
 public class BarsGenerator {
-    public static void main(String[] args) throws ParseException, IOException, InvalidFormatException {
+	static final Logger log = Logger.getLogger(BarsGenerator.class);
+	
+	public static void main(String[] args) throws ParseException, IOException, InvalidFormatException {
     	ApplicationProperties props = ApplicationProperties.getInstance();
     	MarketSimulator simulator = new MarketSimulator();
     	SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:SS");
@@ -29,7 +32,7 @@ public class BarsGenerator {
         allBars.add(mb);
         for(int i = 0; i < props.getNumOfBlocks(); i++)
         {
-			System.out.println("Block " + i);
+			log.trace("Block " + i);
 	        List<MarketBar> bars = simulator.blockHandler(props.getBlock(i), mb.getOpen(), mb.getClose(), mb.getTimestamp());
 	        allBars.addAll(bars);
 	        mb = bars.get(bars.size() - 1);
