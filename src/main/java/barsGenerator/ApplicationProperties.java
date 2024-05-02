@@ -16,7 +16,10 @@ public class ApplicationProperties {
 	private int	maxBarSize = 100;
 	private int barsIntervalInMinutes = 30;
 	private int initialVolume;
+	private boolean sameHighAndLowDepth;
+	private double shadowSizeInBarPercentage;
 	private double probabilityToEnterTrend = .08;
+	private double considerApproachingEndOfTrend;
 	private String startDate = "04/10/2021 00:00";
 	private double marketOpenedHours = 24;
 	private int totalNumberOfPeriodsToGenerate = 6;
@@ -72,12 +75,16 @@ public class ApplicationProperties {
 			barsIntervalInMinutes = Integer.parseInt(properties.getProperty("barsIntervalInMinutes").trim());
 			variable = "maxBarSize";
 			maxBarSize = Integer.parseInt(properties.getProperty("maxBarSize").trim());
-//			variable = "initialVolume";
-//			initialVolume = Integer.parseInt(properties.getProperty("initialVolume").trim());
+			variable = "sameHighAndLowDepth";
+			sameHighAndLowDepth =  Boolean.parseBoolean(properties.getProperty("sameHighAndLowDepth").trim());
 			variable = "startPrice";
 	        startPrice = Double.parseDouble(properties.getProperty("startPrice").trim());
 	        variable = "marketOpenedHours";
 	        marketOpenedHours = Double.parseDouble(properties.getProperty("marketOpenedHours").trim()) / 100;
+	        variable = "shadowSizeInBarPercentage";
+	        shadowSizeInBarPercentage = Double.parseDouble(properties.getProperty("shadowSizeInBarPercentage").trim()) / 100;
+	        variable = "considerApproachingEndOfTrend";
+	        considerApproachingEndOfTrend = Double.parseDouble(properties.getProperty("considerApproachingEndOfTrend").trim()) / 100;
 	        variable = "probabilityToEnterTrend";
 	        probabilityToEnterTrend = Double.parseDouble(properties.getProperty("probabilityToEnterTrend").trim());
 	        variable = "totalNumberOfPeriodsToGenerate";
@@ -100,7 +107,7 @@ public class ApplicationProperties {
 			barsShadow_numOfBarsPercentage = new double[values.length];
 			for(int i = 0; i < values.length; i++)
 			{
-				barsShadow_numOfBarsPercentage[i] = Double.parseDouble(values[i].trim());
+				barsShadow_numOfBarsPercentage[i] = Double.parseDouble(values[i].trim()) / 100;
 			}
 			
 			variable = "barsShadow_averageBarSizePercentage";
@@ -108,7 +115,7 @@ public class ApplicationProperties {
 			barsShadow_averageBarSizePercentage = new double[values.length];
 			for(int i = 0; i < values.length; i++)
 			{
-				barsShadow_averageBarSizePercentage[i] = Double.parseDouble(values[i].trim());
+				barsShadow_averageBarSizePercentage[i] = Double.parseDouble(values[i].trim()) / 100;
 			}
 			
 			blocks = new Block[numOfBlocks];
@@ -117,17 +124,21 @@ public class ApplicationProperties {
 		        variable = "B" + i + ".numOfTrendsInBlock";
 		        int iValue = Integer.parseInt(properties.getProperty(variable).trim());
 		        variable = "B" + i + ".maxIntrabarVol";
-		        double dValue = Integer.parseInt(properties.getProperty(variable).trim());
+		        double dValue = Double.parseDouble(properties.getProperty(variable).trim()) / 100.0;
 				blocks[i - 1] = new Block(iValue, dValue);
 				blocks[i - 1].pushTrend(blocks[i - 1].new Trend(), 0);
 				for(int y = 1; y <= iValue; y++)
 				{
 					Trend trend = blocks[i - 1].new Trend();
+			        variable = "B" + i + ".T" + y +".direction";
+			        trend.direction = Integer.parseInt(properties.getProperty(variable).trim());
+			        
 			        variable = "B" + i + ".T" + y +".duration";
 			        trend.duration = Integer.parseInt(properties.getProperty(variable).trim());
 			        
 			        variable = "B" + i + ".T" + y +".deltaPoints";
-			        trend.deltaPoints = Integer.parseInt(properties.getProperty(variable).trim());
+			        trend.deltaPoints = Integer.parseInt(properties.getProperty(variable).trim()) * 
+			        									 (trend.direction != 0 ? trend.direction : 1);
 			        
 			        variable = "B" + i + ".T" + y +".enableMiniTrends";
 			        trend.enableMiniTrends = Boolean.parseBoolean(properties.getProperty(variable).trim());
@@ -168,7 +179,7 @@ public class ApplicationProperties {
 	}
 
 	public double getProbabilityToEnterTrend() {
-		return probabilityToEnterTrend;
+		return probabilityToEnterTrend / 100;
 	}
 
 	public String getStartDate() {
@@ -205,6 +216,22 @@ public class ApplicationProperties {
 
 	public Block getBlock(int index) {
 		return blocks[index];
+	}
+
+	public Block[] getBlocks() {
+		return blocks;
+	}
+
+	public boolean getSameHighAndLowDepth() {
+		return sameHighAndLowDepth;
+	}
+
+	public double getShadowSizeInBarPercentage() {
+		return shadowSizeInBarPercentage;
+	}
+
+	public double getConsiderApproachingEndOfTrend() {
+		return considerApproachingEndOfTrend;
 	}
 	
 }

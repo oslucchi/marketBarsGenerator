@@ -17,6 +17,8 @@ import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbookFactory;
 
+import barsGenerator.Block.Trend;
+
 public class ExcelOutputHandler {
 	
 	OPCPackage pkg;
@@ -59,35 +61,36 @@ public class ExcelOutputHandler {
         return row;
 	}
 	
-	public void writeHeaderRows(List<MarketTrend> periodTrends)
+	public void writeTrendHeaderRows(Trend[] trends)
 	{
 		int idx;
 		rowIdx = 0;
 
 		row = getRow(rowIdx++);
 		idx = 0;
-	    for(MarketTrend mt : periodTrends)
+	    for(Trend trend : trends)
 	    {
             cell = getCell(row, idx++);
-            cell.setCellValue(mt.getDuration());
+            cell.setCellValue(trend.duration);
         }
 
         row = getRow(rowIdx++);
 		idx = 0;
-	    for(MarketTrend mt : periodTrends)
+	    for(Trend trend : trends)
 	    {
+	    	double volatility = 1 - (trend.closePrice - trend.openPrice) / trend.openPrice;
             cell = getCell(row, idx++);
-            cell.setCellValue(mt.getVolatility());
+            cell.setCellValue(volatility);
         }
 
         row = getRow(rowIdx++);
 		idx = 0;
-	    for(MarketTrend mt : periodTrends)
+	    for(Trend trend : trends)
 	    {
             cell = getCell(row, idx++);
-            cell.setCellValue(mt.getMaxTrendsInPeriod());
+            cell.setCellValue(trend.innerTrends.size());
             cell = getCell(row, idx++);
-            cell.setCellValue(mt.getBarsFollowingTrend());
+            cell.setCellValue(trend.totalBarsInTred);
         }
 	}
 	
@@ -127,6 +130,14 @@ public class ExcelOutputHandler {
         }
 	}
 	
+	public void writeHeaderRows(Block[] blocks)
+	{
+		for(Block block : blocks)
+		{
+			writeTrendHeaderRows(block.getTrends());
+		}
+	}
+
 	public void writeChanges() throws IOException
 	{
     	outFilePath = "output" + File.separator + "stat-" + fileExtension + ".xlsx";

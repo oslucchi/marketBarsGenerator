@@ -17,12 +17,15 @@ public class Block {
 	}
 	
 	public class Trend {
+		int direction; // -1 short, 0 lateral, 1 long
 		int duration;
+		int currentBar;
 		int deltaPoints;
 		boolean enableMiniTrends;
 		int maxBarPerTrend;
 		int minBarPerTrend;
-		double startPrice;
+		int totalBarsInTred;
+		double openPrice;
 		double closePrice;
 		double targetPrice;
 		long timestamp;
@@ -39,6 +42,10 @@ public class Block {
 		this.maxIntrabarVol = maxIntrabarVol;
 		this.numOfTrends = numOfTrends;
 	}
+	public Block()
+	{
+		return;
+	}
 	
 	public void pushTrend(Trend trend, int index)
 	{
@@ -48,6 +55,11 @@ public class Block {
 	public Trend getTrend(int index)
 	{
 		return trends[index];
+	}
+	
+	public Trend[] getTrends()
+	{
+		return trends;
 	}
 	
 	public double getMaxIntrabarVol()

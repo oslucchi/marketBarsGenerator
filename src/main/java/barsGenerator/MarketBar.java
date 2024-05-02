@@ -105,7 +105,7 @@ public class MarketBar {
 
 	@Override
     public String toString() {
-    	SimpleDateFormat df = new SimpleDateFormat("yy/MM/dd HH:mm");
+    	SimpleDateFormat df = new SimpleDateFormat("yyyy/MM/dd HH:mm");
         return String.format("%s %10.2f %10.2f %10.2f %10.2f %10.0f %12.6f %6.6s", 
         					 df.format(new Date(timestamp)), open, high, low, close, 
         					 volume, interest, trendFollowing);

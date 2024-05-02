@@ -4,20 +4,22 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import barsGenerator.Block.InnerTrend;
 import barsGenerator.Block.Trend;
 
 public class MarketSimulator {
 	private Random rand;
 	private ApplicationProperties props;
-	private MarketBar mb;
+	private MarketBar previousBar, currentBar;
 	
-	private double targetPrice;
-    
 	private boolean trendFollowing = false;
-	private int trendSign;
+	private int trendSign = 0;
 	private int barsFollowingTrend;
 	private double directionToGo = 1;
 	private Trend trendCur;
+	private Block block;
+	private boolean forceRebound = false;
+	private boolean approachingEndOfTrend = false;
 
 	public MarketSimulator()
 	{
@@ -26,81 +28,117 @@ public class MarketSimulator {
 		barsFollowingTrend = 0;
 	}
 
-	private void evaluateTrendEnter(Block block)
+	private void evaluateTrendEnter()
 	{
-		directionToGo = Math.signum(targetPrice - mb.getClose());
-
-//		if (trendsInPeriod >= mt.getMaxTrendsInPeriod())
-//		{
-//			trendFollowing = false;;
-//			trendSign = 0;
-//			barsFollowingTrend = 0;
-//			return;
-//		}
-		
-		if (!trendFollowing)
+		if ((trendCur.targetPrice - previousBar.getClose() < block.getMaxIntrabarVol() * trendCur.targetPrice) &&
+			(trendCur.direction == 1))
 		{
-			if (rand.nextDouble() > 1 - props.getProbabilityToEnterTrend())
+			// long, the close price should never go over trend target
+			directionToGo = -1;
+			forceRebound = true;
+		}
+		else if ((currentBar.getOpen() - trendCur.targetPrice < block.getMaxIntrabarVol() * currentBar.getOpen()) &&
+				 (trendCur.direction == -1))
+		{
+			// short, the close price should never go below trend open 
+			directionToGo = 1;
+			forceRebound = true;
+		}
+		else
+		{
+			directionToGo = trendCur.direction; // keep the preferred direction towards the direction stated by the trend
+			forceRebound = false;
+		}
+		
+		if (!approachingEndOfTrend)
+		{
+			if (!trendFollowing)
 			{
-				trendFollowing = true;
-				barsFollowingTrend = (int)((trendCur.maxBarPerTrend - trendCur.minBarPerTrend) * rand.nextDouble()) +
-									 trendCur.minBarPerTrend;
-				double trendDirection = rand.nextDouble() -.5 + (directionToGo > 0 ? .1 : -.1);
-				if (trendDirection < 0)
+				double random = rand.nextDouble();
+				if (random > 1 - props.getProbabilityToEnterTrend())
 				{
-					trendSign = -1;
+					trendFollowing = true;
+					random = rand.nextDouble();
+					barsFollowingTrend = (int)((trendCur.maxBarPerTrend - trendCur.minBarPerTrend) * random) +
+										 trendCur.minBarPerTrend;
+					if (!forceRebound)
+					{
+						random = rand.nextDouble();
+						double trendDirection = random -.5 + (directionToGo > 0 ? .1 : -.1);
+						if (trendDirection < 0)
+						{
+							trendSign = -1;
+						}
+						else
+						{
+							trendSign = 1;
+						}
+					}
+					else
+					{
+						trendSign = (int) directionToGo;
+					}
+					trendCur.innerTrends.add(block.new InnerTrend(trendSign, barsFollowingTrend));
 				}
 				else
 				{
-					trendSign = 1;
+					trendSign = 0;
+					barsFollowingTrend = 0;
 				}
-				trendCur.innerTrends.add(block.new InnerTrend(trendSign, barsFollowingTrend));
 			}
 			else
 			{
-				trendSign = 0;
-				barsFollowingTrend = 0;
+				if (--barsFollowingTrend <= 0)
+				{
+					trendFollowing = false;
+					trendSign = 0;
+					barsFollowingTrend = 0;
+				}
+				else if (forceRebound)
+				{
+					InnerTrend iTrend = trendCur.innerTrends.get(trendCur.innerTrends.size() - 1);
+					iTrend.numOfBars = iTrend.numOfBars - barsFollowingTrend + 1;
+					trendCur.innerTrends.add(block.new InnerTrend(trendSign, barsFollowingTrend + 1));
+					trendSign = (int) directionToGo;
+				}
 			}
 		}
 		else
 		{
-			if (--barsFollowingTrend <= 0)
+			if (trendFollowing)
 			{
-				trendFollowing = false;;
+				InnerTrend iTrend = trendCur.innerTrends.get(trendCur.innerTrends.size() - 1);
+				iTrend.numOfBars = iTrend.numOfBars - barsFollowingTrend + 1;
+				trendFollowing = false;
 				trendSign = 0;
 				barsFollowingTrend = 0;
 			}
+
 		}
 	}
 	
-	private double barChange(Block block)
+	private double nextBarVol()
 	{
-		// Set the probability of a negative number same as positive;
-		double currentVolatility = Math.abs((trendCur.targetPrice - mb.getClose()) / trendCur.targetPrice);
-		double currentVSExpectedVolatilityRatio = currentVolatility / Math.abs(trendCur.deltaPoints / trendCur.startPrice);
-		double volatilityAdjustment = 0; // will help shifting the probability of up and down towards the expected direction
-
-		if (currentVSExpectedVolatilityRatio > 1)
-		{
-			currentVSExpectedVolatilityRatio = 1;
-			volatilityAdjustment = 0.45 * directionToGo;
-		}
+		double random;
 		
-		if (trendFollowing)
+		random = rand.nextDouble() - .5;
+		if (forceRebound)
 		{
-			volatilityAdjustment = trendSign * .25;
-			directionToGo = trendSign;
+			random += directionToGo * .5;
+			System.out.println(String.format("Bar %d - Rebound forced as %6.4f. open %8.2f - target %8.2f - last close %8.2f - last open %8.2f", 
+					trendCur.currentBar,  
+					random,
+					  trendCur.openPrice,
+					  trendCur.targetPrice,
+					  previousBar.getOpen(),
+					  previousBar.getClose()
+					));
 		}
-		
-		// Calculating the intrabar volatility
-		double randomVol = volatilityAdjustment + rand.nextDouble() - 0.5;
-		double changeWidth = 1; 
-		if (Math.signum(randomVol) != directionToGo)
+		else
 		{
-			changeWidth -= (Math.pow(11, currentVSExpectedVolatilityRatio) - .95) / 10; 
+			random = random + (trendSign == 0 ? directionToGo : trendSign) * .1;
 		}
-		double intrabarVol = block.getMaxIntrabarVol() * changeWidth * randomVol;
-		
+		double intrabarVol = block.getMaxIntrabarVol() * random;
 		return intrabarVol;
 	}
 	
@@ -110,49 +148,104 @@ public class MarketSimulator {
         return props.getInitialVolume() + volumeChange * props.getInitialVolume();
 	}
 	
-	public List<MarketBar> blockHandler(Block block, double startPrice, long timestamp)
+	private double calculateHigh(double shadowSize, double barSize)
 	{
+		double reference = Math.max(currentBar.getOpen(), currentBar.getClose());
+        return  reference + barSize * shadowSize * props.getShadowSizeInBarPercentage();
+	}
+	
+	private double calculateLow(double shadowSize, double barSize)
+	{
+		double reference = Math.min(currentBar.getOpen(), currentBar.getClose());
+        return  reference - barSize * shadowSize * props.getShadowSizeInBarPercentage();
+	}
+	
+	private double calculateShadowSize()
+	{
+		double shadowSize = 1;
+		double shadowSizeBand = rand.nextDouble();
+		for(int k = 0; k < props.getBarsShadowNumOfBarsPercentage().length; k++)
+		{
+			if (shadowSizeBand <= props.getBarsShadowNumOfBarsPercentage()[k])
+			{
+				shadowSize = props.getBarsShadowAverageBarSizePercentage()[k];
+				break;
+			}
+		}
+		return shadowSize;
+	}
+	
+	public List<MarketBar> blockHandler(Block block, double openPrice, double closePrice, long timestamp)
+	{
+		this.block = block;
 		List<MarketBar> blockBars = new ArrayList<MarketBar>();
 		Trend trendPrev = block.getTrend(0);
-		trendPrev.closePrice = startPrice;
+		trendPrev.closePrice = openPrice;
 		trendPrev.timestamp = timestamp - props.getBarsIntervalInMinutes() * 60000;
 		
+		previousBar = new MarketBar(trendPrev.timestamp, props.getBarsIntervalInMinutes() * 60000, 0, 0); // the simulated previous mkt bar
+		previousBar.setClose(closePrice);
+		previousBar.setOpen(openPrice);
 		for(int y = 0; y < block.getNumOfTrends(); y++)
 		{
+			trendSign = 0;
 			trendCur = block.getTrend(y + 1);
-			trendCur.startPrice = trendPrev.closePrice;
-			trendCur.targetPrice = trendCur.startPrice + trendCur.deltaPoints;
+			trendCur.openPrice = previousBar.getClose();
+			trendCur.targetPrice = trendCur.openPrice + trendCur.deltaPoints;
 			trendCur.timestamp = trendPrev.timestamp + props.getBarsIntervalInMinutes() * 60000;
-			mb = new MarketBar(trendPrev.timestamp, props.getBarsIntervalInMinutes(), 0, 0); // the simulated previous makt bar
-			mb.setClose(trendCur.startPrice);
+			trendCur.currentBar = 0;
+			approachingEndOfTrend = false;
 
+			System.out.println("*** Trend " + y);
 			for(int i = 0; i < trendCur.duration; i++)
 			{
-				evaluateTrendEnter(block);
-				double priceChange = barChange(block);
-				MarketBar newBar = new MarketBar(mb.getTimestamp(), props.getBarsIntervalInMinutes(), priceChange, trendSign);
-				newBar.setOpen(mb.getClose());
-				newBar.setClose(mb.getClose() + mb.getClose() * priceChange);
-				double barSizeBand = rand.nextDouble();
-				double barSize = 0;
-				for(int k = 0; k < props.getBarsShadowNumOfBarsPercentage().length; k++)
+				if (i > trendCur.duration - trendCur.duration * props.getConsiderApproachingEndOfTrend())
 				{
-					if (barSizeBand < props.getBarsShadowNumOfBarsPercentage()[k])
-					{
-						barSize = props.getBarsShadowAverageBarSizePercentage()[k];
-						break;
-					}
+					approachingEndOfTrend = true;
+				}
+				trendCur.currentBar++;
+				currentBar = new MarketBar(previousBar.getTimestamp(), props.getBarsIntervalInMinutes() * 60000, 0, 0);
+				currentBar.setOpen(previousBar.getClose()); // the openPrice is set to the last close price
+				
+				// Evaluate if an innertMiniTrend starts and record it eventually
+				evaluateTrendEnter();
+				currentBar.setTrendFollowing(trendFollowing ? 1 * trendSign : 0);
+				
+				// Get where the next bar should go based on the current price, the open and target and the 
+				// presence of an innerMiniTrend
+				currentBar.setIntrabarVol(nextBarVol());
+				double priceChange = previousBar.getClose() * currentBar.getIntrabarVol();
+				
+				if ((trendCur.direction != 0) &&
+					((previousBar.getClose() + priceChange >= 
+						(trendCur.direction == 1 ? trendCur.targetPrice : trendCur.openPrice)) ||
+					(previousBar.getClose() + priceChange <= 
+						(trendCur.direction == -1 ? trendCur.targetPrice : trendCur.openPrice)))) 
+				{
+					priceChange *= -1;
+					
 				}
 				
-				newBar.setHigh(Math.max(newBar.getOpen(), newBar.getClose()) * (1 + barSize / 100));
-				newBar.setLow(Math.min(newBar.getOpen(), newBar.getClose()) * (1 - barSize / 100));
+				currentBar.setClose(previousBar.getClose() + priceChange);
+				
+				//Calculate HIGH and low based on the configured probability distribution 
+				double barSize = Math.abs(currentBar.getClose() - currentBar.getOpen());
 
-				newBar.setVolume(calculateVolume());
+				double shadowSize = calculateShadowSize();
+				currentBar.setHigh(calculateHigh(shadowSize, barSize));
+				if (!props.getSameHighAndLowDepth())
+				{
+					shadowSize = calculateShadowSize();
+				}
+				currentBar.setLow(calculateLow(shadowSize, barSize));
 
-				blockBars.add(newBar);
-				mb = blockBars.get(blockBars.size() - 1);
+				currentBar.setVolume(calculateVolume());
+
+				blockBars.add(currentBar);
+				previousBar = currentBar;
 			}
 			trendPrev = trendCur;
+			trendFollowing = false;
 		}
 
 		return blockBars;

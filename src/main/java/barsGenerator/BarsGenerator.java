@@ -11,82 +11,68 @@ import java.util.List;
 
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 
+import barsGenerator.Block.Trend;
+
 public class BarsGenerator {
     public static void main(String[] args) throws ParseException, IOException, InvalidFormatException {
     	ApplicationProperties props = ApplicationProperties.getInstance();
     	MarketSimulator simulator = new MarketSimulator();
-    	SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm");
+    	SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:SS");
 
     	System.out.println("Simulation startin on date: " + props.getStartDate());
     	System.out.println("Writing results in: " + System.getProperty("user.dir"));
-    	MarketBar mb = new MarketBar(sdf.parse(props.getStartDate()).getTime() - props.getBarsIntervalInMinutes(), 0, 0, 0);
+    	MarketBar mb = new MarketBar(sdf.parse(props.getStartDate()).getTime() - props.getBarsIntervalInMinutes() * 60000, 0, 0, 0);
     	mb.setClose(props.getStartPrice());
+    	mb.setOpen(props.getStartPrice());
     	
         List<MarketBar> allBars = new ArrayList<>();
         allBars.add(mb);
         for(int i = 0; i < props.getNumOfBlocks(); i++)
         {
-	        List<MarketBar> bars = simulator.blockHandler(props.getBlock(i), props.getStartPrice(), mb.getTimestamp());
+			System.out.println("Block " + i);
+	        List<MarketBar> bars = simulator.blockHandler(props.getBlock(i), mb.getOpen(), mb.getClose(), mb.getTimestamp());
 	        allBars.addAll(bars);
+	        mb = bars.get(bars.size() - 1);
         }
         allBars.remove(0);
+        
+        
 	    String pathToSave = System.getProperty("user.dir") + 
 				    File.separator + "output" + File.separator;
 	    String runExtension = new SimpleDateFormat("yyMMdd_HHmmss_").format(new Date());
-//        ExcelOutputHandler excel = new ExcelOutputHandler(runExtension);
 
-//	    excel.writeHeaderRows(periodTrends);
-//	    excel.writeDataRows(allBars);
-//	    excel.writeChanges();
-	    
-        PrintWriter localWriter = new PrintWriter(pathToSave + runExtension + "bars.csv", "UTF-8");
-        String sep = "";
-	    int idx = 0;
-//	    for(MarketTrend mt : periodTrends)
-//	    {
-//    	    localWriter.print((sep + mt.getDuration()).replace(".", ","));
-//    	    sep = "; ";
-//	    }
-//	    localWriter.println("");
-//	    sep = "";
-//	    for(MarketTrend mt : periodTrends)
-//	    {
-//    	    localWriter.print((sep + mt.getVolatility()).replace(".", ","));
-//    	    sep = "; ";
-//	    }
-//	    localWriter.println("");
-//	    sep = "";
-//	    for(MarketTrend mt : periodTrends)
-//	    {
-//    	    localWriter.print((sep + mt.getMaxTrendsInPeriod() + "; " + mt.getMaxBarsInTrend()).replace(".", ","));
-//    	    sep = "; ";
-//	    }
-	    for(int i = 0; i < 8; i++)
-    	{
-	    	localWriter.println("");
-    	}
-	    
 	    PrintWriter tradiaWriter = new PrintWriter(pathToSave + runExtension + "tradiaBars.csv", "UTF-8");
-//	    for(int i = 0; i < props.getDuration().length; i++)
-//	    {
-//	    	System.out.println(
-//	    			String.format("\n*** New period: duration %d - volatility %4.2f - start price %8.2f - target %8.2f", 
-//		  						  props.getDuration()[i],
-//								  props.getVolatility()[i],
-//								  allBars.get(idx).getOpen(),
-//								  allBars.get(idx).getOpen() + allBars.get(i).getOpen() * props.getVolatility()[i] / 100
-//    						  ));
-//		    System.out.println(String.format("%-14.14s %10.8s %10.8s %10.8s %10.8s %10.8s %12.12s %6.6s", 
-//	                "Time", "Open", "High", "Low", "Close", "Volume", "Applied Vol", "Trend"));
-//            System.out.println(allBars.get(idx));
-//	    	for(int y = 0; y < props.getDuration()[i]; y++)
-//	    	{
-//	    	    localWriter.println(allBars.get(idx).csvOutput());
-//	    	    tradiaWriter.println(allBars.get(idx++).tradiaOutput());
-//	    	}
-//    		System.out.println(allBars.get(idx -1 ));
-//	    }
-	    localWriter.close();
+	    int barIdx = 0;
+	    for(Block block: props.getBlocks())
+	    {
+	    	for(int i = 1; i < block.getTrends().length; i++)
+	    	{
+	    		Trend trend = block.getTrend(i);
+		    	System.out.println(
+		    			String.format("\n*** New trend: direction %s - duration %d - open %8.2f - target %8.2f - close %8.2f", 
+			  						  (trend.direction == 1 ? "long" : (trend.direction == 0 ? "lateral" : "short")),
+		    						  trend.duration,
+									  trend.openPrice,
+									  trend.targetPrice,
+									  trend.closePrice
+	    						  ));
+			    System.out.println(String.format("%-14.14s %10.8s %10.8s %10.8s %10.8s %10.8s %12.12s %6.6s", 
+		                "Time", "Open", "High", "Low", "Close", "Volume", "Applied Vol", "Trend"));
+	            System.out.println(allBars.get(barIdx));
+		    	for(int y = 0; y < trend.duration; y++)
+		    	{
+		    	    tradiaWriter.println(allBars.get(barIdx++).tradiaOutput());
+		    	}
+	    		System.out.println(allBars.get(barIdx -1 ));
+	    	}
+	    }
 	    tradiaWriter.close();
+	    
+	    
+	    ExcelOutputHandler excel = new ExcelOutputHandler(runExtension);
+
+	    excel.writeHeaderRows(props.getBlocks());
+	    excel.writeDataRows(allBars);
+	    excel.writeChanges();
     }
 }
