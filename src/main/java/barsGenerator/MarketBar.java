@@ -126,6 +126,6 @@ public class MarketBar {
     	SimpleDateFormat time = new SimpleDateFormat("HH:mm:00");
     	Date ts = new Date(timestamp);
         return String.format("%s,%s,%.2f,%.2f,%.2f,%.2f,%.0f", 
-        					 date.format(ts), time.format(ts), open, high, low, close, volume);
+        					 date.format(ts), time.format(ts), open, high, low, close, (volume == 0 ? 1000 : volume));
     }
 }
