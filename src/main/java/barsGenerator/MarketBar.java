@@ -5,6 +5,7 @@ import java.util.Calendar;
 import java.util.Date;
 
 public class MarketBar {
+	private ApplicationProperties props = ApplicationProperties.getInstance();
 	private long timestamp;
 	private double open;
 	private double close;
@@ -117,8 +118,8 @@ public class MarketBar {
     	Date ts = new Date(timestamp);
         return String.format("%s %s,%.2f,%.2f,%.2f,%.2f,%.0f,%.5f,%d", 
         					 date.format(ts), time.format(ts), open, high, low, close, volume, intrabarVol, trendFollowing)
-        					.replace(",", ";")
-        					.replace(".", ",");
+        					.replace(",", props.getFieldSeparator())
+        					.replace(".", props.getDecimalSeparator());
     }
 
     public String tradiaOutput() {
@@ -126,6 +127,8 @@ public class MarketBar {
     	SimpleDateFormat time = new SimpleDateFormat("HH:mm:00");
     	Date ts = new Date(timestamp);
         return String.format("%s,%s,%.2f,%.2f,%.2f,%.2f,%.0f", 
-        					 date.format(ts), time.format(ts), open, high, low, close, (volume == 0 ? 1000 : volume));
+        					 date.format(ts), time.format(ts), open, high, low, close, (volume == 0 ? 1000 : volume))
+         					.replace(",", props.getFieldSeparator())
+         					.replace(".", props.getDecimalSeparator());
     }
 }

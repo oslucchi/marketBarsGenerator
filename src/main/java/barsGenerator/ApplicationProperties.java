@@ -12,6 +12,9 @@ public class ApplicationProperties {
 	private static ApplicationProperties instance = null;
 	final Logger log = Logger.getLogger(this.getClass());
 	
+	private String decimalSeparator;
+	private String fieldSeparator;
+
 	private int numOfBlocks = 6;
 	private int	maxBarSize = 100;
 	private int barsIntervalInMinutes = 30;
@@ -69,6 +72,10 @@ public class ApplicationProperties {
     	
 		try
     	{
+			variable = "decimalSeparator";
+			decimalSeparator = properties.getProperty("decimalSeparator").trim();
+			variable = "fieldSeparator";
+			fieldSeparator = properties.getProperty("fieldSeparator").trim();
 			variable = "numOfBlocks";
 			numOfBlocks = Integer.parseInt(properties.getProperty("numOfBlocks").trim());
 			variable = "barsIntervalInMinutes";
@@ -79,6 +86,8 @@ public class ApplicationProperties {
 			sameHighAndLowDepth =  Boolean.parseBoolean(properties.getProperty("sameHighAndLowDepth").trim());
 			variable = "startPrice";
 	        startPrice = Double.parseDouble(properties.getProperty("startPrice").trim());
+	        variable = "initialVolume";
+	        initialVolume = Integer.parseInt(properties.getProperty("initialVolume").trim());
 	        variable = "marketOpenedHours";
 	        marketOpenedHours = Double.parseDouble(properties.getProperty("marketOpenedHours").trim()) / 100;
 	        variable = "shadowSizeInBarPercentage";
@@ -160,6 +169,14 @@ public class ApplicationProperties {
     		log.error("The format for the variable '" + variable + "' is incorrect (" +
     					 properties.getProperty("sessionExpireTime") + ")", e);
     	}		
+	}
+
+	public String getDecimalSeparator() {
+		return decimalSeparator;
+	}
+
+	public String getFieldSeparator() {
+		return fieldSeparator;
 	}
 
 	public int getNumOfBlocks() {

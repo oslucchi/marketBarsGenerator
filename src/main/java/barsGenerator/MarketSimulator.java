@@ -128,32 +128,50 @@ public class MarketSimulator {
 		}
 	}
 	
+	private double calculateBarSize()
+	{
+		double barSize = 1;
+		double barSizeBand = rand.nextDouble();
+		for(int k = 0; k < props.getBarsShadowNumOfBarsPercentage().length; k++)
+		{
+			if (barSizeBand <= props.getBarsShadowNumOfBarsPercentage()[k])
+			{
+				barSize = props.getBarsShadowAverageBarSizePercentage()[k];
+				break;
+			}
+		}
+		return barSize;
+	}
+	
 	private double nextBarVol()
 	{
-		double random;
+		double barSize = calculateBarSize();
 		
-		random = rand.nextDouble() - .5;
+		double random = (rand.nextDouble() - .5);
 		if (forceRebound)
 		{
 			random += directionToGo * .5;
-			log.trace(String.format("Bar %d - Rebound forced as %6.4f. open %8.2f - target %8.2f - last close %8.2f - last open %8.2f", 
-					trendCur.currentBar,  
-					random,
-					  trendCur.openPrice,
-					  trendCur.targetPrice,
-					  previousBar.getOpen(),
-					  previousBar.getClose()
+			log.trace(
+					String.format("Bar %d - Rebound forced as %6.4f. open %8.2f - target %8.2f - last close %8.2f - last open %8.2f", 
+								trendCur.currentBar,  
+								random,
+								trendCur.openPrice,
+								trendCur.targetPrice,
+								previousBar.getOpen(),
+								previousBar.getClose()
 					));
 		}
 		else if (approachingEndOfTrend)
 		{
-			random = random + trendSign * .5;
+				// random = random + trendSign * .5;
+			random = rand.nextDouble() / 4 + .75;
+			random *= directionToGo;
 		}
 		else
 		{
 			random = random + (trendSign == 0 ? directionToGo : trendSign) * .1;
 		}
-		double intrabarVol = block.getMaxIntrabarVol() * random;
+		double intrabarVol = block.getMaxIntrabarVol() * barSize * random;
 		return intrabarVol;
 	}
 	
@@ -163,36 +181,13 @@ public class MarketSimulator {
         return props.getInitialVolume() + volumeChange * props.getInitialVolume();
 	}
 	
-	private double calculateHigh(double shadowSize, double barSize)
-	{
-		double reference = Math.max(currentBar.getOpen(), currentBar.getClose());
-        return  reference + barSize * shadowSize * props.getShadowSizeInBarPercentage();
-	}
-	
-	private double calculateLow(double shadowSize, double barSize)
-	{
-		double reference = Math.min(currentBar.getOpen(), currentBar.getClose());
-        return  reference - barSize * shadowSize * props.getShadowSizeInBarPercentage();
-	}
-	
-	private double calculateShadowSize()
-	{
-		double shadowSize = 1;
-		double shadowSizeBand = rand.nextDouble();
-		for(int k = 0; k < props.getBarsShadowNumOfBarsPercentage().length; k++)
-		{
-			if (shadowSizeBand <= props.getBarsShadowNumOfBarsPercentage()[k])
-			{
-				shadowSize = props.getBarsShadowAverageBarSizePercentage()[k];
-				break;
-			}
-		}
-		return shadowSize;
-	}
-	
 	public List<MarketBar> blockHandler(Block block, double openPrice, double closePrice, long timestamp)
 	{
-		this.block = block;
+		double shadowSize;
+		double reference;
+        double shadow;
+
+        this.block = block;
 		List<MarketBar> blockBars = new ArrayList<MarketBar>();
 		Trend trendPrev = block.getTrend(0);
 		trendPrev.closePrice = openPrice;
@@ -244,15 +239,16 @@ public class MarketSimulator {
 				currentBar.setClose(previousBar.getClose() + priceChange);
 				
 				//Calculate HIGH and low based on the configured probability distribution 
-				double barSize = Math.abs(currentBar.getClose() - currentBar.getOpen());
-
-				double shadowSize = calculateShadowSize();
-				currentBar.setHigh(calculateHigh(shadowSize, barSize));
+				shadowSize = Math.abs(currentBar.getClose() - currentBar.getOpen()) * 2;
+				reference = Math.max(currentBar.getOpen(), currentBar.getClose());
+		        shadow = shadowSize * rand.nextDouble();
+				currentBar.setHigh(reference + shadow);
+				reference = Math.min(currentBar.getOpen(), currentBar.getClose());
 				if (!props.getSameHighAndLowDepth())
 				{
-					shadowSize = calculateShadowSize();
+					shadow = shadowSize - shadow;
 				}
-				currentBar.setLow(calculateLow(shadowSize, barSize));
+				currentBar.setLow(reference - shadow);
 
 				currentBar.setVolume(calculateVolume());
 
@@ -262,15 +258,17 @@ public class MarketSimulator {
 			currentBar = new MarketBar(previousBar.getTimestamp(), props.getBarsIntervalInMinutes() * 60000, 0, 0);
 			currentBar.setOpen(previousBar.getClose()); // the openPrice is set to the last close price
 			currentBar.setClose(trendCur.targetPrice); // the openPrice is set to the last close price
-			double barSize = Math.abs(currentBar.getClose() - currentBar.getOpen());
-
-			double shadowSize = calculateShadowSize();
-			currentBar.setHigh(calculateHigh(shadowSize, barSize));
+			shadowSize = Math.abs(currentBar.getClose() - currentBar.getOpen()) * 2;
+			reference = Math.max(currentBar.getOpen(), currentBar.getClose());
+	        shadow = shadowSize * rand.nextDouble();
+			currentBar.setHigh(reference + shadow);
+			reference = Math.min(currentBar.getOpen(), currentBar.getClose());
 			if (!props.getSameHighAndLowDepth())
 			{
-				shadowSize = calculateShadowSize();
+				shadow = shadowSize - shadow;
 			}
-			currentBar.setLow(calculateLow(shadowSize, barSize));
+			currentBar.setLow(reference - shadow);
+
 			currentBar.setVolume(calculateVolume());
 			blockBars.add(currentBar);
 			previousBar = currentBar;
