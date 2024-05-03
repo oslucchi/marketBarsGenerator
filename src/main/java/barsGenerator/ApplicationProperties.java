@@ -20,7 +20,7 @@ public class ApplicationProperties {
 	private int barsIntervalInMinutes = 30;
 	private int initialVolume;
 	private boolean sameHighAndLowDepth;
-	private double shadowSizeInBarPercentage;
+	private double[] shadowSizeInBarPercentage;
 	private double probabilityToEnterTrend = .08;
 	private double considerApproachingEndOfTrend;
 	private String startDate = "04/10/2021 00:00";
@@ -90,8 +90,6 @@ public class ApplicationProperties {
 	        initialVolume = Integer.parseInt(properties.getProperty("initialVolume").trim());
 	        variable = "marketOpenedHours";
 	        marketOpenedHours = Double.parseDouble(properties.getProperty("marketOpenedHours").trim()) / 100;
-	        variable = "shadowSizeInBarPercentage";
-	        shadowSizeInBarPercentage = Double.parseDouble(properties.getProperty("shadowSizeInBarPercentage").trim()) / 100;
 	        variable = "considerApproachingEndOfTrend";
 	        considerApproachingEndOfTrend = Double.parseDouble(properties.getProperty("considerApproachingEndOfTrend").trim()) / 100;
 	        variable = "probabilityToEnterTrend";
@@ -103,6 +101,14 @@ public class ApplicationProperties {
 	        variable = "blocksSequenceRandom";
 	        blocksSequenceRandom = Boolean.parseBoolean(properties.getProperty("startDate").trim());
 	        
+	        variable = "shadowSizeInBarPercentage";
+			values = properties.getProperty(variable).split(",");
+			shadowSizeInBarPercentage = new double[values.length];
+			for(int i = 0; i < values.length; i++)
+			{
+				shadowSizeInBarPercentage[i] = Double.parseDouble(values[i].trim());
+			}
+
 	        variable = "blocksSequence";
 			values = properties.getProperty("blocksSequence").split(",");
 			blocksSequence = new int[values.length];
@@ -243,8 +249,8 @@ public class ApplicationProperties {
 		return sameHighAndLowDepth;
 	}
 
-	public double getShadowSizeInBarPercentage() {
-		return shadowSizeInBarPercentage;
+	public double getShadowSizeInBarPercentage(int index) {
+		return shadowSizeInBarPercentage[index] / 100;
 	}
 
 	public double getConsiderApproachingEndOfTrend() {

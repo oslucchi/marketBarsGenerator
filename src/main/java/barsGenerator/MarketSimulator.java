@@ -34,31 +34,33 @@ public class MarketSimulator {
 
 	private void evaluateTrendEnter()
 	{
-		if ((trendCur.targetPrice - previousBar.getClose() < block.getMaxIntrabarVol() * trendCur.targetPrice) &&
+		forceRebound = false;
+		if ((Math.abs(trendCur.targetPrice - previousBar.getClose()) < block.getMaxIntrabarVol() * trendCur.targetPrice) &&
 			(trendCur.direction == 1))
 		{
 			// long, the close price should never go over trend target
 			directionToGo = -1;
 			forceRebound = true;
 		}
-		else if ((currentBar.getOpen() - trendCur.targetPrice < block.getMaxIntrabarVol() * currentBar.getOpen()) &&
+		else if ((Math.abs(currentBar.getOpen() - trendCur.targetPrice) < block.getMaxIntrabarVol() * currentBar.getOpen()) &&
 				 (trendCur.direction == -1))
 		{
 			// short, the close price should never go below trend open 
 			directionToGo = 1;
 			forceRebound = true;
 		}
-		else
+		else if (trendCur.direction == 0)
 		{
-			if (trendCur.direction == 0)
+			if ((Math.abs(currentBar.getOpen() - trendCur.targetPrice) < block.getMaxIntrabarVol() * currentBar.getOpen()) ||
+				(Math.abs(trendCur.targetPrice - previousBar.getClose()) < block.getMaxIntrabarVol() * trendCur.targetPrice))
 			{
 				directionToGo = Math.signum(trendCur.targetPrice - previousBar.getClose()); // keep the focus to the target
+				forceRebound = true;
 			}
-			else
-			{
-				directionToGo = trendCur.direction;
-			}
-			forceRebound = false;
+		}
+		else
+		{
+			directionToGo = trendCur.direction;
 		}
 		
 		if (!approachingEndOfTrend)
