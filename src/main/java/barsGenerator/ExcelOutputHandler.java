@@ -17,8 +17,6 @@ import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbookFactory;
 
-import barsGenerator.Block.Trend;
-
 public class ExcelOutputHandler {
 	
 	OPCPackage pkg;

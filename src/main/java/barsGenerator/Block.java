@@ -1,49 +1,22 @@
 package barsGenerator;
 
-import java.util.ArrayList;
-import java.util.List;
+public class Block implements Cloneable {
 
-public class Block {
-
-	public class InnerTrend {
-		int direction;
-		int numOfBars;
-		
-		public InnerTrend(int direction, int numOfBars)
-		{
-			this.direction = direction;
-			this.numOfBars = numOfBars;
-		}
-	}
-	
-	public class Trend {
-		int direction; // -1 short, 0 lateral, 1 long
-		int duration;
-		int currentBar;
-		int deltaPoints;
-		boolean enableMiniTrends;
-		int maxBarPerTrend;
-		int minBarPerTrend;
-		int totalBarsInTred;
-		double openPrice;
-		double closePrice;
-		double targetPrice;
-		long timestamp;
-		List<InnerTrend> innerTrends = new ArrayList<>();
-	}
-	
+	private int id;
 	private int numOfTrends;
 	private Trend[] trends;
 	private double maxIntrabarVol;
 	
-	public Block(int numOfTrends, double maxIntrabarVol)
+	public Block(int numOfTrends, double maxIntrabarVol, int id)
 	{
+		this.id = id;
 		trends = new Trend[numOfTrends + 1];
 		this.maxIntrabarVol = maxIntrabarVol;
 		this.numOfTrends = numOfTrends;
 	}
-	public Block()
+	public Block(int id)
 	{
+		this.id = id;
 		return;
 	}
 	
@@ -70,5 +43,18 @@ public class Block {
 	public int getNumOfTrends() {
 		return numOfTrends;
 	}
-	
+	public int getId() {
+		return id;
+	}
+	 @Override
+	 public Block clone() throws CloneNotSupportedException {
+		 Block blockCloned = (Block) super.clone();
+		 blockCloned.trends = new Trend[trends.length];
+		 int i = 0;
+		 for(Trend t : trends)
+		 {
+			 blockCloned.trends[i++] = t.clone();
+		 }
+		 return blockCloned;
+	 }
 }

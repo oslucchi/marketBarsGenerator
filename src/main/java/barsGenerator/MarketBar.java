@@ -3,7 +3,6 @@ package barsGenerator;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.Random;
 
 public class MarketBar {
 	final int LOW = 0;
@@ -19,49 +18,56 @@ public class MarketBar {
 	private double interest;
 	private double intrabarVol;
 	private int trendFollowing;
-	private Random rand;
 
     public MarketBar(long lastTimestamp, long msInterval, double intrabarVol, int trendFollowing) 
     {
-        Calendar c1 = Calendar.getInstance();
-        c1.setTime(new Date(lastTimestamp + msInterval));
-
-		if ((c1.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY) || 
-			(Calendar.DAY_OF_WEEK == Calendar.SUNDAY))
-		{
-			lastTimestamp += 172800000;
-		}
-		this.timestamp = lastTimestamp + msInterval;
+    	setTimestampOnCalendar(lastTimestamp, msInterval);
         this.interest = intrabarVol;
         this.intrabarVol = intrabarVol;
         this.trendFollowing= trendFollowing;
-    	this.rand = new Random(System.currentTimeMillis()); 
     }
     
     public void setHighAndLow()
     {
-		double[] shadowSize = new double[2];
+		// Magnitude of the current bar
+    	double barBodySize = Math.abs(close - open);
 
 		double[] shadowsSizePercentage = { 
 				props.getShadowSizeInBarPercentage(0),
 				props.getShadowSizeInBarPercentage(1)
 			};
-		double barSize = Math.abs(close - open);
+
+		double[] shadowSize = new double[2];
+		
+		double shadowsSizePercentageOfPriceBar = (props.getRand().nextDouble() * 
+												  (shadowsSizePercentage[1] - shadowsSizePercentage[0]) +
+												  shadowsSizePercentage[0]);
+
 		if (props.getSameHighAndLowDepth())
 		{
-			shadowSize[LOW] = barSize * shadowsSizePercentage[1];
+			if (props.getUseRandomOnBothHighAndLow())
+			{
+				shadowsSizePercentage[1] = shadowsSizePercentageOfPriceBar;
+			}
+			shadowSize[LOW] = barBodySize * shadowsSizePercentage[1];
 			shadowSize[HIGH] = shadowSize[LOW];
 		}
 		else
 		{
-			double random = rand.nextDouble() * 
-					 (shadowsSizePercentage[1] - shadowsSizePercentage[0]) +
-					 shadowsSizePercentage[0];
-			shadowSize[LOW] = barSize * random;
-			random = rand.nextDouble() * 
-					 (shadowsSizePercentage[1] - shadowsSizePercentage[0]) +
-					 shadowsSizePercentage[0];
-			shadowSize[HIGH] = barSize * random;
+			if (props.getUseRandomOnBothHighAndLow())
+			{
+				shadowSize[LOW] = barBodySize * shadowsSizePercentageOfPriceBar;
+				shadowsSizePercentageOfPriceBar = (props.getRand().nextDouble() * 
+									(shadowsSizePercentage[1] - shadowsSizePercentage[0]) +
+									shadowsSizePercentage[0]);
+				shadowSize[HIGH] = barBodySize * shadowsSizePercentageOfPriceBar;
+			}
+			else
+			{
+				barBodySize *= 2 * shadowsSizePercentageOfPriceBar;
+				shadowSize[LOW] = barBodySize * props.getRand().nextDouble();
+				shadowSize[HIGH] = barBodySize - shadowSize[LOW];
+			}
 		}
 		
 		double reference = Math.max(open, close);
@@ -70,9 +76,9 @@ public class MarketBar {
 		low = reference - shadowSize[LOW];
     }
     
-    public MarketBar(long lastTimestamp) 
+    public MarketBar(long lastTimestamp, long msInterval) 
     {
-    	this.rand = new Random(System.currentTimeMillis()); 
+    	setTimestampOnCalendar(lastTimestamp, msInterval);
     	return;
     }
     
@@ -91,6 +97,19 @@ public class MarketBar {
 
 	public void setTimestamp(long timestamp) {
 		this.timestamp = timestamp;
+	}
+	
+	public void setTimestampOnCalendar(long lastTimestamp, long msInterval)
+	{
+        Calendar c1 = Calendar.getInstance();
+        c1.setTime(new Date(lastTimestamp + msInterval));
+
+		if ((c1.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY) || 
+			(Calendar.DAY_OF_WEEK == Calendar.SUNDAY))
+		{
+			lastTimestamp += 172800000;
+		}
+		this.timestamp = lastTimestamp + msInterval;
 	}
 
 	public double getOpen() {

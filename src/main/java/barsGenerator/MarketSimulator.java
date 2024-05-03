@@ -2,19 +2,14 @@ package barsGenerator;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 import org.apache.log4j.Logger;
-
-import barsGenerator.Block.InnerTrend;
-import barsGenerator.Block.Trend;
 
 public class MarketSimulator {
 	final Logger log = Logger.getLogger(this.getClass());
 	final int LOW = 0;
 	final int HIGH = 1;
 
-	private Random rand;
 	private ApplicationProperties props;
 	private MarketBar previousBar, currentBar;
 	
@@ -30,7 +25,6 @@ public class MarketSimulator {
 	public MarketSimulator()
 	{
 		props = ApplicationProperties.getInstance();
-		this.rand = new Random(System.currentTimeMillis()); 
 		barsFollowingTrend = 0;
 	}
 
@@ -69,16 +63,16 @@ public class MarketSimulator {
 		{
 			if (!trendFollowing)
 			{
-				double random = rand.nextDouble();
+				double random = props.getRand().nextDouble();
 				if (random > 1 - props.getProbabilityToEnterTrend())
 				{
 					trendFollowing = true;
-					random = rand.nextDouble();
+					random = props.getRand().nextDouble();
 					barsFollowingTrend = (int)((trendCur.maxBarPerTrend - trendCur.minBarPerTrend) * random) +
 										 trendCur.minBarPerTrend;
 					if (!forceRebound)
 					{
-						random = rand.nextDouble();
+						random = props.getRand().nextDouble();
 						double trendDirection = random -.5 + (directionToGo > 0 ? .1 : -.1);
 						if (trendDirection < 0)
 						{
@@ -93,7 +87,7 @@ public class MarketSimulator {
 					{
 						trendSign = (int) directionToGo;
 					}
-					trendCur.innerTrends.add(block.new InnerTrend(trendSign, barsFollowingTrend));
+					trendCur.innerTrends.add(new InnerTrend(trendSign, barsFollowingTrend));
 				}
 				else
 				{
@@ -113,7 +107,7 @@ public class MarketSimulator {
 				{
 					InnerTrend iTrend = trendCur.innerTrends.get(trendCur.innerTrends.size() - 1);
 					iTrend.numOfBars = iTrend.numOfBars - barsFollowingTrend + 1;
-					trendCur.innerTrends.add(block.new InnerTrend(trendSign, barsFollowingTrend + 1));
+					trendCur.innerTrends.add(new InnerTrend(trendSign, barsFollowingTrend + 1));
 					trendSign = (int) directionToGo;
 				}
 			}
@@ -135,7 +129,7 @@ public class MarketSimulator {
 	private double calculateBarSize()
 	{
 		double barSize = 1;
-		double barSizeBand = rand.nextDouble();
+		double barSizeBand = props.getRand().nextDouble();
 		for(int k = 0; k < props.getBarsShadowNumOfBarsPercentage().length; k++)
 		{
 			if (barSizeBand <= props.getBarsShadowNumOfBarsPercentage()[k])
@@ -151,7 +145,7 @@ public class MarketSimulator {
 	{
 		double barSize = calculateBarSize();
 		
-		double random = (rand.nextDouble() - .5);
+		double random = (props.getRand().nextDouble() - .5);
 		if (forceRebound)
 		{
 			random += directionToGo * .5;
@@ -168,7 +162,7 @@ public class MarketSimulator {
 		else if (approachingEndOfTrend)
 		{
 				// random = random + trendSign * .5;
-			random = rand.nextDouble() / 4 + .75;
+			random = props.getRand().nextDouble() / 4 + .75;
 			random *= directionToGo;
 		}
 		else
@@ -181,7 +175,7 @@ public class MarketSimulator {
 	
 	private double calculateVolume()
 	{
-		double volumeChange = (rand.nextDouble() - .5) * 2;
+		double volumeChange = (props.getRand().nextDouble() - .5) * 2;
         return props.getInitialVolume() + volumeChange * props.getInitialVolume();
 	}
 	

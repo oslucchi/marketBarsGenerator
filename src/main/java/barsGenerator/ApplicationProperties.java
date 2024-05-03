@@ -3,10 +3,9 @@ package barsGenerator;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
+import java.util.Random;
 
 import org.apache.log4j.Logger;
-
-import barsGenerator.Block.Trend;
 
 public class ApplicationProperties {
 	private static ApplicationProperties instance = null;
@@ -20,7 +19,7 @@ public class ApplicationProperties {
 	private int barsIntervalInMinutes = 30;
 	private int initialVolume;
 	private boolean sameHighAndLowDepth;
-	private boolean distributeShadowEvenly;
+	private boolean useRandomOnBothHighAndLow;
 	private double[] shadowSizeInBarPercentage;
 	private double probabilityToEnterTrend = .08;
 	private double considerApproachingEndOfTrend;
@@ -33,6 +32,7 @@ public class ApplicationProperties {
 	private double[] barsShadow_numOfBarsPercentage = {.10, .80, .95, .99, 1};
 	private double[] barsShadow_averageBarSizePercentage = {.05, .30, .04, .70, 1.00};
 	private Block[] blocks;
+	private Random rand;
 
 	public static ApplicationProperties getInstance()
 	{
@@ -47,6 +47,8 @@ public class ApplicationProperties {
 	{
 		String variable = "";
 		String[] values;
+		rand = new Random(System.currentTimeMillis());
+
 		log.trace("ApplicationProperties start");
 		Properties properties = new Properties();
 		log.debug("path of abs / '" + ApplicationProperties.class.getResource("/").getPath() + "'");
@@ -74,35 +76,35 @@ public class ApplicationProperties {
 		try
     	{
 			variable = "decimalSeparator";
-			decimalSeparator = properties.getProperty("decimalSeparator").trim();
+			decimalSeparator = properties.getProperty(variable).trim();
 			variable = "fieldSeparator";
-			fieldSeparator = properties.getProperty("fieldSeparator").trim();
+			fieldSeparator = properties.getProperty(variable).trim();
 			variable = "numOfBlocks";
-			numOfBlocks = Integer.parseInt(properties.getProperty("numOfBlocks").trim());
+			numOfBlocks = Integer.parseInt(properties.getProperty(variable).trim());
 			variable = "barsIntervalInMinutes";
-			barsIntervalInMinutes = Integer.parseInt(properties.getProperty("barsIntervalInMinutes").trim());
+			barsIntervalInMinutes = Integer.parseInt(properties.getProperty(variable).trim());
 			variable = "maxBarSize";
-			maxBarSize = Integer.parseInt(properties.getProperty("maxBarSize").trim());
+			maxBarSize = Integer.parseInt(properties.getProperty(variable).trim());
 			variable = "sameHighAndLowDepth";
-			sameHighAndLowDepth =  Boolean.parseBoolean(properties.getProperty("sameHighAndLowDepth").trim());
-			variable = "distributeShadowEvenly";
-			distributeShadowEvenly =  Boolean.parseBoolean(properties.getProperty("distributeShadowEvenly").trim());
+			sameHighAndLowDepth = Boolean.parseBoolean(properties.getProperty(variable).trim());
+			variable = "useRandomOnBothHighAndLow";
+			useRandomOnBothHighAndLow = Boolean.parseBoolean(properties.getProperty(variable).trim());
 			variable = "startPrice";
-	        startPrice = Double.parseDouble(properties.getProperty("startPrice").trim());
+	        startPrice = Double.parseDouble(properties.getProperty(variable).trim());
 	        variable = "initialVolume";
-	        initialVolume = Integer.parseInt(properties.getProperty("initialVolume").trim());
+	        initialVolume = Integer.parseInt(properties.getProperty(variable).trim());
 	        variable = "marketOpenedHours";
-	        marketOpenedHours = Double.parseDouble(properties.getProperty("marketOpenedHours").trim()) / 100;
+	        marketOpenedHours = Double.parseDouble(properties.getProperty(variable).trim()) / 100;
 	        variable = "considerApproachingEndOfTrend";
-	        considerApproachingEndOfTrend = Double.parseDouble(properties.getProperty("considerApproachingEndOfTrend").trim()) / 100;
+	        considerApproachingEndOfTrend = Double.parseDouble(properties.getProperty(variable).trim()) / 100;
 	        variable = "probabilityToEnterTrend";
-	        probabilityToEnterTrend = Double.parseDouble(properties.getProperty("probabilityToEnterTrend").trim());
+	        probabilityToEnterTrend = Double.parseDouble(properties.getProperty(variable).trim());
 	        variable = "totalNumberOfPeriodsToGenerate";
-	        totalNumberOfPeriodsToGenerate = Integer.parseInt(properties.getProperty("totalNumberOfPeriodsToGenerate").trim());
+	        totalNumberOfPeriodsToGenerate = Integer.parseInt(properties.getProperty(variable).trim());
 	        variable = "startDate";
-	        startDate = properties.getProperty("startDate").trim();
+	        startDate = properties.getProperty(variable).trim();
 	        variable = "blocksSequenceRandom";
-	        blocksSequenceRandom = Boolean.parseBoolean(properties.getProperty("startDate").trim());
+	        blocksSequenceRandom = Boolean.parseBoolean(properties.getProperty(variable).trim());
 	        
 	        variable = "shadowSizeInBarPercentage";
 			values = properties.getProperty(variable).split(",");
@@ -113,7 +115,7 @@ public class ApplicationProperties {
 			}
 
 	        variable = "blocksSequence";
-			values = properties.getProperty("blocksSequence").split(",");
+			values = properties.getProperty(variable).split(",");
 			blocksSequence = new int[values.length];
 			for(int i = 0; i < values.length; i++)
 			{
@@ -143,11 +145,11 @@ public class ApplicationProperties {
 		        int iValue = Integer.parseInt(properties.getProperty(variable).trim());
 		        variable = "B" + i + ".maxIntrabarVol";
 		        double dValue = Double.parseDouble(properties.getProperty(variable).trim()) / 100.0;
-				blocks[i - 1] = new Block(iValue, dValue);
-				blocks[i - 1].pushTrend(blocks[i - 1].new Trend(), 0);
+				blocks[i - 1] = new Block(iValue, dValue, i);
+				blocks[i - 1].pushTrend(new Trend(), 0);
 				for(int y = 1; y <= iValue; y++)
 				{
-					Trend trend = blocks[i - 1].new Trend();
+					Trend trend = new Trend();
 			        variable = "B" + i + ".T" + y +".direction";
 			        trend.direction = Integer.parseInt(properties.getProperty(variable).trim());
 			        
@@ -220,7 +222,7 @@ public class ApplicationProperties {
 		return totalNumberOfPeriodsToGenerate;
 	}
 
-	public boolean isBlocksSequenceRandom() {
+	public boolean getBlocksSequenceRandom() {
 		return blocksSequenceRandom;
 	}
 
@@ -260,8 +262,11 @@ public class ApplicationProperties {
 		return considerApproachingEndOfTrend;
 	}
 
-	public boolean getDistributeShadowEvenly() {
-		return distributeShadowEvenly;
+	public boolean getUseRandomOnBothHighAndLow() {
+		return useRandomOnBothHighAndLow;
 	}
-	
+
+	public Random getRand() {
+		return rand;
+	}
 }

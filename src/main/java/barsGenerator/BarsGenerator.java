@@ -12,12 +12,10 @@ import java.util.List;
 import org.apache.log4j.Logger;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 
-import barsGenerator.Block.Trend;
-
 public class BarsGenerator {
 	static final Logger log = Logger.getLogger(BarsGenerator.class);
 	
-	public static void main(String[] args) throws ParseException, IOException, InvalidFormatException {
+	public static void main(String[] args) throws ParseException, IOException, InvalidFormatException, CloneNotSupportedException {
     	ApplicationProperties props = ApplicationProperties.getInstance();
     	MarketSimulator simulator = new MarketSimulator();
     	SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:SS");
@@ -29,12 +27,25 @@ public class BarsGenerator {
     	mb.setOpen(props.getStartPrice());
     	
         List<MarketBar> allBars = new ArrayList<>();
+        List<Block> period = new ArrayList<>();
         allBars.add(mb);
-        for(int i = 0; i < props.getNumOfBlocks(); i++)
+        for(int i = 0; i < props.getTotalNumberOfPeriodsToGenerate(); i++)
         {
-			log.trace("Block " + i);
-	        List<MarketBar> bars = simulator.blockHandler(props.getBlock(i), mb.getOpen(), mb.getClose(), mb.getTimestamp());
+			Block blockToRun;
+			int blockId;
+			if (props.getBlocksSequenceRandom())
+			{
+				blockId = ((int)((props.getNumOfBlocks() - 1) * props.getRand().nextDouble()));
+			}
+			else
+			{
+				blockId = props.getBlocksSequence()[i] - 1;
+			}
+			blockToRun = props.getBlock(blockId).clone();
+	        List<MarketBar> bars = simulator.blockHandler(blockToRun, mb.getOpen(), mb.getClose(), mb.getTimestamp());
+	        period.add(blockToRun);        
 	        allBars.addAll(bars);
+	        
 	        mb = bars.get(bars.size() - 1);
         }
         allBars.remove(0);
@@ -46,27 +57,29 @@ public class BarsGenerator {
 
 	    PrintWriter tradiaWriter = new PrintWriter(pathToSave + runExtension + "tradiaBars.csv", "UTF-8");
 	    int barIdx = 0;
-	    for(Block block: props.getBlocks())
+	    int pCount = 0;
+	    for(Block block: period)
 	    {
+	    	log.debug("\n\nBlock " + pCount++ + " -- used blckId: " + block.getId());
 	    	for(int i = 1; i < block.getTrends().length; i++)
 	    	{
 	    		Trend trend = block.getTrend(i);
-		    	System.out.println(
-		    			String.format("\n*** New trend: direction %s - duration %d - open %8.2f - target %8.2f - close %8.2f", 
+		    	log.debug(
+		    			String.format("*** New trend: direction %s - duration %d - open %8.2f - target %8.2f - close %8.2f", 
 			  						  (trend.direction == 1 ? "long" : (trend.direction == 0 ? "lateral" : "short")),
 		    						  trend.duration,
 									  trend.openPrice,
 									  trend.targetPrice,
 									  trend.closePrice
 	    						  ));
-			    System.out.println(String.format("%-14.14s %10.8s %10.8s %10.8s %10.8s %10.8s %12.12s %6.6s", 
+		    	log.debug(String.format("%-14.14s %10.8s %10.8s %10.8s %10.8s %10.8s %12.12s %6.6s", 
 		                "Time", "Open", "High", "Low", "Close", "Volume", "Applied Vol", "Trend"));
-	            System.out.println(allBars.get(barIdx));
+		    	log.debug(allBars.get(barIdx));
 		    	for(int y = 0; y < trend.duration; y++)
 		    	{
 		    	    tradiaWriter.println(allBars.get(barIdx++).tradiaOutput());
 		    	}
-	    		System.out.println(allBars.get(barIdx -1 ));
+		    	log.debug(allBars.get(barIdx -1 ));
 	    	}
 	    }
 	    tradiaWriter.close();
