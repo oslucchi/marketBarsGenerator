@@ -11,6 +11,8 @@ import barsGenerator.Block.Trend;
 
 public class MarketSimulator {
 	final Logger log = Logger.getLogger(this.getClass());
+	final int LOW = 0;
+	final int HIGH = 1;
 
 	private Random rand;
 	private ApplicationProperties props;
@@ -185,10 +187,6 @@ public class MarketSimulator {
 	
 	public List<MarketBar> blockHandler(Block block, double openPrice, double closePrice, long timestamp)
 	{
-		double shadowSize;
-		double reference;
-        double shadow;
-
         this.block = block;
 		List<MarketBar> blockBars = new ArrayList<MarketBar>();
 		Trend trendPrev = block.getTrend(0);
@@ -236,42 +234,21 @@ public class MarketSimulator {
 				{
 					priceChange *= -1;
 					
-				}
-				
+				}				
 				currentBar.setClose(previousBar.getClose() + priceChange);
-				
-				//Calculate HIGH and low based on the configured probability distribution 
-				shadowSize = Math.abs(currentBar.getClose() - currentBar.getOpen()) * 2;
-				reference = Math.max(currentBar.getOpen(), currentBar.getClose());
-		        shadow = shadowSize * rand.nextDouble();
-				currentBar.setHigh(reference + shadow);
-				reference = Math.min(currentBar.getOpen(), currentBar.getClose());
-				if (!props.getSameHighAndLowDepth())
-				{
-					shadow = shadowSize - shadow;
-				}
-				currentBar.setLow(reference - shadow);
-
+				currentBar.setHighAndLow();;
 				currentBar.setVolume(calculateVolume());
 
 				blockBars.add(currentBar);
 				previousBar = currentBar;
 			}
+
 			currentBar = new MarketBar(previousBar.getTimestamp(), props.getBarsIntervalInMinutes() * 60000, 0, 0);
 			currentBar.setOpen(previousBar.getClose()); // the openPrice is set to the last close price
 			currentBar.setClose(trendCur.targetPrice); // the openPrice is set to the last close price
-			shadowSize = Math.abs(currentBar.getClose() - currentBar.getOpen()) * 2;
-			reference = Math.max(currentBar.getOpen(), currentBar.getClose());
-	        shadow = shadowSize * rand.nextDouble();
-			currentBar.setHigh(reference + shadow);
-			reference = Math.min(currentBar.getOpen(), currentBar.getClose());
-			if (!props.getSameHighAndLowDepth())
-			{
-				shadow = shadowSize - shadow;
-			}
-			currentBar.setLow(reference - shadow);
-
+			currentBar.setHighAndLow();			
 			currentBar.setVolume(calculateVolume());
+			
 			blockBars.add(currentBar);
 			previousBar = currentBar;
 			

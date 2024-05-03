@@ -20,6 +20,7 @@ public class ApplicationProperties {
 	private int barsIntervalInMinutes = 30;
 	private int initialVolume;
 	private boolean sameHighAndLowDepth;
+	private boolean distributeShadowEvenly;
 	private double[] shadowSizeInBarPercentage;
 	private double probabilityToEnterTrend = .08;
 	private double considerApproachingEndOfTrend;
@@ -84,6 +85,8 @@ public class ApplicationProperties {
 			maxBarSize = Integer.parseInt(properties.getProperty("maxBarSize").trim());
 			variable = "sameHighAndLowDepth";
 			sameHighAndLowDepth =  Boolean.parseBoolean(properties.getProperty("sameHighAndLowDepth").trim());
+			variable = "distributeShadowEvenly";
+			distributeShadowEvenly =  Boolean.parseBoolean(properties.getProperty("distributeShadowEvenly").trim());
 			variable = "startPrice";
 	        startPrice = Double.parseDouble(properties.getProperty("startPrice").trim());
 	        variable = "initialVolume";
@@ -255,6 +258,10 @@ public class ApplicationProperties {
 
 	public double getConsiderApproachingEndOfTrend() {
 		return considerApproachingEndOfTrend;
+	}
+
+	public boolean getDistributeShadowEvenly() {
+		return distributeShadowEvenly;
 	}
 	
 }

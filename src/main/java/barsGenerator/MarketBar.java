@@ -3,8 +3,12 @@ package barsGenerator;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Random;
 
 public class MarketBar {
+	final int LOW = 0;
+	final int HIGH = 1;
+
 	private ApplicationProperties props = ApplicationProperties.getInstance();
 	private long timestamp;
 	private double open;
@@ -15,6 +19,7 @@ public class MarketBar {
 	private double interest;
 	private double intrabarVol;
 	private int trendFollowing;
+	private Random rand;
 
     public MarketBar(long lastTimestamp, long msInterval, double intrabarVol, int trendFollowing) 
     {
@@ -29,9 +34,57 @@ public class MarketBar {
 		this.timestamp = lastTimestamp + msInterval;
         this.interest = intrabarVol;
         this.intrabarVol = intrabarVol;
-        this.trendFollowing= trendFollowing ;
+        this.trendFollowing= trendFollowing;
+    	this.rand = new Random(System.currentTimeMillis()); 
     }
+    
+    public void setHighAndLow()
+    {
+		double[] shadowSize = new double[2];
 
+		double[] shadowsSizePercentage = { 
+				props.getShadowSizeInBarPercentage(0),
+				props.getShadowSizeInBarPercentage(1)
+			};
+		double barSize = Math.abs(close - open);
+		if (props.getSameHighAndLowDepth())
+		{
+			shadowSize[LOW] = barSize * shadowsSizePercentage[1];
+			shadowSize[HIGH] = shadowSize[LOW];
+		}
+		else
+		{
+			double random = rand.nextDouble() * 
+					 (shadowsSizePercentage[1] - shadowsSizePercentage[0]) +
+					 shadowsSizePercentage[0];
+			shadowSize[LOW] = barSize * random;
+			random = rand.nextDouble() * 
+					 (shadowsSizePercentage[1] - shadowsSizePercentage[0]) +
+					 shadowsSizePercentage[0];
+			shadowSize[HIGH] = barSize * random;
+		}
+		
+		double reference = Math.max(open, close);
+		high = reference + shadowSize[HIGH];
+		reference = Math.min(open, close);
+		low = reference - shadowSize[LOW];
+    }
+    
+    public MarketBar(long lastTimestamp) 
+    {
+    	this.rand = new Random(System.currentTimeMillis()); 
+    	return;
+    }
+    
+    public void populateObject(double open, double priceChange, double volume)
+    {
+    	this.open = open;
+    	this.close = open + priceChange;
+    	this.volume = volume;
+    	setHighAndLow();
+    	return;
+    }
+   
     public long getTimestamp() {
 		return timestamp;
 	}
