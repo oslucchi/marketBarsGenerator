@@ -1,4 +1,4 @@
-package barsGenerator;
+package it.l_soft.barsGenerator;
 
 import java.io.File;
 import java.io.IOException;
@@ -16,9 +16,17 @@ public class BarsGenerator {
 	static final Logger log = Logger.getLogger(BarsGenerator.class);
 	
 	public static void main(String[] args) throws ParseException, IOException, InvalidFormatException, CloneNotSupportedException {
-    	ApplicationProperties props = ApplicationProperties.getInstance();
+		ApplicationProperties props;
+		if ((args.length > 0) && (args[0].compareTo("-f") == 0))
+		{
+			props = ApplicationProperties.getInstance(args[1]);
+		}
+		else
+		{
+			props = ApplicationProperties.getInstance();
+		}
     	MarketSimulator simulator = new MarketSimulator();
-    	SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:SS");
+    	SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
 
     	System.out.println("Simulation startin on date: " + props.getStartDate());
     	System.out.println("Writing results in: " + System.getProperty("user.dir"));

@@ -1,4 +1,4 @@
-package barsGenerator;
+package it.l_soft.barsGenerator;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -186,7 +186,7 @@ public class MarketBar {
 	
     public String csvOutput() {
     	SimpleDateFormat date = new SimpleDateFormat("dd/MM/YYYY");
-    	SimpleDateFormat time = new SimpleDateFormat("HH:mm");
+    	SimpleDateFormat time = new SimpleDateFormat("HH:mm:ss");
     	Date ts = new Date(timestamp);
         return String.format("%s %s,%.2f,%.2f,%.2f,%.2f,%.0f,%.5f,%d", 
         					 date.format(ts), time.format(ts), open, high, low, close, volume, intrabarVol, trendFollowing)
@@ -196,7 +196,7 @@ public class MarketBar {
 
     public String tradiaOutput() {
     	SimpleDateFormat date = new SimpleDateFormat("dd/MM/YYYY");
-    	SimpleDateFormat time = new SimpleDateFormat("HH:mm:00");
+    	SimpleDateFormat time = new SimpleDateFormat("HH:mm:ss");
     	Date ts = new Date(timestamp);
         return String.format("%s,%s,%.2f,%.2f,%.2f,%.2f,%.0f", 
         					 date.format(ts), time.format(ts), open, high, low, close, (volume == 0 ? 1000 : volume))

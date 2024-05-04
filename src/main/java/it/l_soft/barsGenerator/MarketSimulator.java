@@ -1,4 +1,4 @@
-package barsGenerator;
+package it.l_soft.barsGenerator;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -162,7 +162,7 @@ public class MarketSimulator {
 		else if (approachingEndOfTrend)
 		{
 				// random = random + trendSign * .5;
-			random = props.getRand().nextDouble() / 4 + .75;
+			random = props.getRand().nextDouble() / 4 * trendSign + .75;
 			random *= directionToGo;
 		}
 		else
@@ -201,7 +201,8 @@ public class MarketSimulator {
 			approachingEndOfTrend = false;
 
 			log.trace("*** Trend " + y);
-			for(int i = 0; i < trendCur.duration - 1; i++)
+			int duration = (props.getForceConvergenceOnLastBar() ? trendCur.duration - 1: trendCur.duration);
+			for(int i = 0; i < duration; i++)
 			{
 				if (i > trendCur.duration - trendCur.duration * props.getConsiderApproachingEndOfTrend())
 				{
@@ -237,14 +238,17 @@ public class MarketSimulator {
 				previousBar = currentBar;
 			}
 
-			currentBar = new MarketBar(previousBar.getTimestamp(), props.getBarsIntervalInMinutes() * 60000, 0, 0);
-			currentBar.setOpen(previousBar.getClose()); // the openPrice is set to the last close price
-			currentBar.setClose(trendCur.targetPrice); // the openPrice is set to the last close price
-			currentBar.setHighAndLow();			
-			currentBar.setVolume(calculateVolume());
-			
-			blockBars.add(currentBar);
-			previousBar = currentBar;
+			if (props.getForceConvergenceOnLastBar())
+			{
+				currentBar = new MarketBar(previousBar.getTimestamp(), props.getBarsIntervalInMinutes() * 60000, 0, 0);
+				currentBar.setOpen(previousBar.getClose()); // the openPrice is set to the last close price
+				currentBar.setClose(trendCur.targetPrice); // the openPrice is set to the last close price
+				currentBar.setHighAndLow();			
+				currentBar.setVolume(calculateVolume());
+				
+				blockBars.add(currentBar);
+				previousBar = currentBar;
+			}
 			
 			trendPrev = trendCur;
 			trendFollowing = false;

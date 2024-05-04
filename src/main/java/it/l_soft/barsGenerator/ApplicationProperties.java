@@ -1,5 +1,7 @@
-package barsGenerator;
+package it.l_soft.barsGenerator;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
@@ -14,26 +16,42 @@ public class ApplicationProperties {
 	private String decimalSeparator;
 	private String fieldSeparator;
 
-	private int numOfBlocks = 6;
-	private int	maxBarSize = 100;
-	private int barsIntervalInMinutes = 30;
+	private int numOfBlocks;
+	private int	maxBarSize;
+	private int barsIntervalInMinutes;
 	private int initialVolume;
 	private boolean sameHighAndLowDepth;
 	private boolean useRandomOnBothHighAndLow;
+	private boolean forceConvergenceOnLastBar;
 	private double[] shadowSizeInBarPercentage;
-	private double probabilityToEnterTrend = .08;
+	private double probabilityToEnterTrend;
 	private double considerApproachingEndOfTrend;
-	private String startDate = "04/10/2021 00:00";
-	private double marketOpenedHours = 24;
-	private int totalNumberOfPeriodsToGenerate = 6;
-	private boolean blocksSequenceRandom = false;
-	private int[] blocksSequence = {1, 2, 3, 4, 5, 6};
-	private double startPrice = 1000;
-	private double[] barsShadow_numOfBarsPercentage = {.10, .80, .95, .99, 1};
-	private double[] barsShadow_averageBarSizePercentage = {.05, .30, .04, .70, 1.00};
+	private String startDate;
+	private double marketOpenedHours;
+	private int totalNumberOfPeriodsToGenerate;
+	private boolean blocksSequenceRandom;
+	private int[] blocksSequence;
+	private double startPrice;
+	private double[] barsShadow_numOfBarsPercentage;
+	private double[] barsShadow_averageBarSizePercentage;
 	private Block[] blocks;
 	private Random rand;
+	private static String propertiesPath = null;
 
+	public static ApplicationProperties getInstance(String propPath)
+	{
+		if (propPath != null)
+		{
+			propertiesPath = propPath;
+		}
+
+		if (instance == null)
+		{
+			instance = new ApplicationProperties();
+		}
+		return(instance);
+	}
+	
 	public static ApplicationProperties getInstance()
 	{
 		if (instance == null)
@@ -51,14 +69,26 @@ public class ApplicationProperties {
 
 		log.trace("ApplicationProperties start");
 		Properties properties = new Properties();
-		log.debug("path of abs / '" + ApplicationProperties.class.getResource("/").getPath() + "'");
 		
     	try 
     	{
-    		log.debug("application path '" + ApplicationProperties.class.getResource("/").getPath() + "'");
-    		log.debug("path of abs package.properties '" + 
-  				  ApplicationProperties.class.getResource("/package.properties").getPath() + "'");
-        	InputStream in = ApplicationProperties.class.getResourceAsStream("/package.properties");
+        	InputStream in;
+        	if (propertiesPath == null)
+        	{
+        		in = ApplicationProperties.class.getResourceAsStream("/package.properties");
+        	    System.out.println("ApplicationPropertes using package props'");
+        	}
+        	else
+        	{
+        		String confFilePath = System.getProperty("user.dir") + 
+									  File.separator + "conf" + File.separator + 
+									  "package.properties";
+        		
+        	    File initialFile = new File(confFilePath);
+        	    System.out.println("ApplicationPropertes using '" + confFilePath + "'");
+
+        	    in = new FileInputStream(initialFile);
+        	}
         	if (in == null)
         	{
         		log.error("resource path not found");
@@ -89,6 +119,8 @@ public class ApplicationProperties {
 			sameHighAndLowDepth = Boolean.parseBoolean(properties.getProperty(variable).trim());
 			variable = "useRandomOnBothHighAndLow";
 			useRandomOnBothHighAndLow = Boolean.parseBoolean(properties.getProperty(variable).trim());
+			variable = "forceConvergenceOnLastBar";
+			forceConvergenceOnLastBar = Boolean.parseBoolean(properties.getProperty(variable).trim());
 			variable = "startPrice";
 	        startPrice = Double.parseDouble(properties.getProperty(variable).trim());
 	        variable = "initialVolume";
@@ -269,4 +301,9 @@ public class ApplicationProperties {
 	public Random getRand() {
 		return rand;
 	}
+
+	public boolean getForceConvergenceOnLastBar() {
+		return forceConvergenceOnLastBar;
+	}
+	
 }

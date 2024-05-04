@@ -1,4 +1,4 @@
-package barsGenerator;
+package it.l_soft.barsGenerator;
 
 public class Block implements Cloneable {
 

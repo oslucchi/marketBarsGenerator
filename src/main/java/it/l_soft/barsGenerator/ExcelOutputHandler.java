@@ -1,4 +1,4 @@
-package barsGenerator;
+package it.l_soft.barsGenerator;
 
 import java.io.File;
 import java.io.FileInputStream;
