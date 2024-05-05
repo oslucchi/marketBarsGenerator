@@ -169,6 +169,10 @@ public class ApplicationProperties {
 					blocksSequence[i] = rand.nextInt(numOfBlocks) + 1;
 				}
 			}
+			else
+			{
+				totalNumberOfPeriodsToGenerate = values.length;
+			}
 
 			variable = "barsShadow_numOfBarsPercentage";
 			values = properties.getProperty("barsShadow.numOfBarsPercentage").split(",");
