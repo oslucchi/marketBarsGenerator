@@ -3,6 +3,8 @@ package it.l_soft.barsGenerator;
 import java.util.ArrayList;
 
 public class Trend implements Cloneable {
+	int id;
+	String name;
 	int direction; // -1 short, 0 lateral, 1 long
 	int duration;
 	int currentBar;
@@ -14,7 +16,8 @@ public class Trend implements Cloneable {
 	double openPrice;
 	double closePrice;
 	double targetPrice;
-	long timestamp;
+	long timestampStart;
+	long timestampEnd;
 	ArrayList<InnerTrend> innerTrends = new ArrayList<>();
 	
 	@Override

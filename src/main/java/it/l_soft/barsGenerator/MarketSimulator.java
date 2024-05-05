@@ -121,8 +121,7 @@ public class MarketSimulator {
 				trendFollowing = false;
 				barsFollowingTrend = 0;
 			}
-			trendSign = (trendCur.direction != 0 ? trendCur.direction : 
-						 (int) Math.signum(trendCur.targetPrice - previousBar.getClose()));
+			directionToGo = trendSign = (int) Math.signum(trendCur.targetPrice - previousBar.getClose());
 		}
 	}
 	
@@ -185,9 +184,9 @@ public class MarketSimulator {
 		List<MarketBar> blockBars = new ArrayList<MarketBar>();
 		Trend trendPrev = block.getTrend(0);
 		trendPrev.closePrice = openPrice;
-		trendPrev.timestamp = timestamp - props.getBarsIntervalInMinutes() * 60000;
+		trendPrev.timestampEnd = timestamp - props.getBarsIntervalInMinutes() * 60000;
 		
-		previousBar = new MarketBar(trendPrev.timestamp, props.getBarsIntervalInMinutes() * 60000, 0, 0); // the simulated previous mkt bar
+		previousBar = new MarketBar(trendPrev.timestampEnd, props.getBarsIntervalInMinutes() * 60000, 0, 0); // the simulated previous mkt bar
 		previousBar.setClose(closePrice);
 		previousBar.setOpen(openPrice);
 		for(int y = 0; y < block.getNumOfTrends(); y++)
@@ -196,7 +195,7 @@ public class MarketSimulator {
 			trendCur = block.getTrend(y + 1);
 			trendCur.openPrice = previousBar.getClose();
 			trendCur.targetPrice = trendCur.openPrice + trendCur.deltaPoints;
-			trendCur.timestamp = trendPrev.timestamp + props.getBarsIntervalInMinutes() * 60000;
+			trendCur.timestampStart = trendPrev.timestampEnd + props.getBarsIntervalInMinutes() * 60000;
 			trendCur.currentBar = 0;
 			approachingEndOfTrend = false;
 
@@ -249,7 +248,8 @@ public class MarketSimulator {
 				blockBars.add(currentBar);
 				previousBar = currentBar;
 			}
-			
+			trendCur.closePrice = currentBar.getClose();
+			trendCur.timestampEnd = currentBar.getTimestamp();
 			trendPrev = trendCur;
 			trendFollowing = false;
 		}

@@ -3,6 +3,7 @@ package it.l_soft.barsGenerator;
 public class Block implements Cloneable {
 
 	private int id;
+	private String name;
 	private int numOfTrends;
 	private Trend[] trends;
 	private double maxIntrabarVol;
@@ -46,7 +47,12 @@ public class Block implements Cloneable {
 	public int getId() {
 		return id;
 	}
-	 @Override
+	
+	public String getName() {
+		return name;
+	}
+	 
+	@Override
 	 public Block clone() throws CloneNotSupportedException {
 		 Block blockCloned = (Block) super.clone();
 		 blockCloned.trends = new Trend[trends.length];

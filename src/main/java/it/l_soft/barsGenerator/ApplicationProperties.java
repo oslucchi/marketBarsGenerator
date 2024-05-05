@@ -80,9 +80,7 @@ public class ApplicationProperties {
         	}
         	else
         	{
-        		String confFilePath = System.getProperty("user.dir") + 
-									  File.separator + "conf" + File.separator + 
-									  "package.properties";
+        		String confFilePath = System.getProperty("user.dir") + File.separator + propertiesPath;
         		
         	    File initialFile = new File(confFilePath);
         	    System.out.println("ApplicationPropertes using '" + confFilePath + "'");
@@ -106,9 +104,20 @@ public class ApplicationProperties {
 		try
     	{
 			variable = "decimalSeparator";
-			decimalSeparator = properties.getProperty(variable).trim();
+			try {
+				decimalSeparator = properties.getProperty(variable).trim();			}
+			catch(Exception e)
+			{
+				decimalSeparator = null;
+			}
 			variable = "fieldSeparator";
-			fieldSeparator = properties.getProperty(variable).trim();
+			try {
+				fieldSeparator = properties.getProperty(variable).trim();
+			}
+			catch(Exception e)
+			{
+				fieldSeparator = null;
+			}
 			variable = "numOfBlocks";
 			numOfBlocks = Integer.parseInt(properties.getProperty(variable).trim());
 			variable = "barsIntervalInMinutes";
@@ -146,14 +155,21 @@ public class ApplicationProperties {
 				shadowSizeInBarPercentage[i] = Double.parseDouble(values[i].trim());
 			}
 
-	        variable = "blocksSequence";
+			variable = "blocksSequence";
 			values = properties.getProperty(variable).split(",");
-			blocksSequence = new int[values.length];
+			blocksSequence = new int[blocksSequenceRandom ? totalNumberOfPeriodsToGenerate : values.length];
 			for(int i = 0; i < values.length; i++)
 			{
 				blocksSequence[i] = Integer.parseInt(values[i].trim());
 			}
-			
+			if (blocksSequenceRandom)
+			{
+				for(int i = values.length; i < totalNumberOfPeriodsToGenerate; i++)
+				{
+					blocksSequence[i] = rand.nextInt(numOfBlocks) + 1;
+				}
+			}
+
 			variable = "barsShadow_numOfBarsPercentage";
 			values = properties.getProperty("barsShadow.numOfBarsPercentage").split(",");
 			barsShadow_numOfBarsPercentage = new double[values.length];
@@ -305,5 +321,4 @@ public class ApplicationProperties {
 	public boolean getForceConvergenceOnLastBar() {
 		return forceConvergenceOnLastBar;
 	}
-	
 }

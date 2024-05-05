@@ -30,7 +30,7 @@ public class BarsGenerator {
 
     	System.out.println("Simulation startin on date: " + props.getStartDate());
     	System.out.println("Writing results in: " + System.getProperty("user.dir"));
-    	MarketBar mb = new MarketBar(sdf.parse(props.getStartDate()).getTime() - props.getBarsIntervalInMinutes() * 60000, 0, 0, 0);
+    	MarketBar mb = new MarketBar(sdf.parse(props.getStartDate()).getTime() , 0, 0, 0);
     	mb.setClose(props.getStartPrice());
     	mb.setOpen(props.getStartPrice());
     	
@@ -41,14 +41,7 @@ public class BarsGenerator {
         {
 			Block blockToRun;
 			int blockId;
-			if (props.getBlocksSequenceRandom())
-			{
-				blockId = ((int)((props.getNumOfBlocks() - 1) * props.getRand().nextDouble()));
-			}
-			else
-			{
-				blockId = props.getBlocksSequence()[i] - 1;
-			}
+			blockId = props.getBlocksSequence()[i] - 1;
 			blockToRun = props.getBlock(blockId).clone();
 	        List<MarketBar> bars = simulator.blockHandler(blockToRun, mb.getOpen(), mb.getClose(), mb.getTimestamp());
 	        period.add(blockToRun);        
@@ -95,7 +88,7 @@ public class BarsGenerator {
 	    
 	    ExcelOutputHandler excel = new ExcelOutputHandler(runExtension);
 
-	    excel.writeHeaderRows(props.getBlocks());
+	    excel.writeHeaderRows(period);
 	    excel.writeDataRows(allBars);
 	    excel.writeChanges();
     }

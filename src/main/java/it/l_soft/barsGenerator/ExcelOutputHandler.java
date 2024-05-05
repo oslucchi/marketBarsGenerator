@@ -6,6 +6,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
@@ -31,15 +32,14 @@ public class ExcelOutputHandler {
 
     String outFilePath;
     String fileExtension;
+	SimpleDateFormat date = new SimpleDateFormat("dd/MM/YYYY HH:mm");
     
     public ExcelOutputHandler(String fileExtension) throws InvalidFormatException, IOException
 	{
     	this.fileExtension = fileExtension;
-    	InputStream inp = new FileInputStream("output" + File.separator + "statistics.xlsx");
+    	InputStream inp = new FileInputStream("output" + File.separator + "statistics.xlsm");
 		wb = XSSFWorkbookFactory.createWorkbook(inp);
-	    sheet = wb.getSheet("bars");
-    	
-	}
+   	}
 	
 	private XSSFCell getCell(XSSFRow row, int idx)
 	{
@@ -59,43 +59,10 @@ public class ExcelOutputHandler {
         return row;
 	}
 	
-	public void writeTrendHeaderRows(Trend[] trends)
-	{
-		int idx;
-		rowIdx = 0;
-
-		row = getRow(rowIdx++);
-		idx = 0;
-	    for(Trend trend : trends)
-	    {
-            cell = getCell(row, idx++);
-            cell.setCellValue(trend.duration);
-        }
-
-        row = getRow(rowIdx++);
-		idx = 0;
-	    for(Trend trend : trends)
-	    {
-	    	double volatility = 1 - (trend.closePrice - trend.openPrice) / trend.openPrice;
-            cell = getCell(row, idx++);
-            cell.setCellValue(volatility);
-        }
-
-        row = getRow(rowIdx++);
-		idx = 0;
-	    for(Trend trend : trends)
-	    {
-            cell = getCell(row, idx++);
-            cell.setCellValue(trend.innerTrends.size());
-            cell = getCell(row, idx++);
-            cell.setCellValue(trend.totalBarsInTred);
-        }
-	}
-	
 	public void writeDataRows(List<MarketBar> allBars)
 	{
-		rowIdx = 10;
-	    rows = sheet.getPhysicalNumberOfRows();
+		rowIdx = 0;
+	    sheet = wb.getSheet("bars");
 
 	    for(MarketBar mt : allBars)
 	    {
@@ -103,7 +70,7 @@ public class ExcelOutputHandler {
 	    	row = getRow(rowIdx++);
 	    	
             cell = getCell(row, colIdx++);
-            cell.setCellValue(new Date(mt.getTimestamp()));
+            cell.setCellValue(date.format(new Date(mt.getTimestamp())));
             
             cell = getCell(row, colIdx++);
             cell.setCellValue(mt.getOpen());
@@ -118,27 +85,50 @@ public class ExcelOutputHandler {
             cell.setCellValue(mt.getClose());
             
             cell = getCell(row, colIdx++);
-            cell.setCellValue(mt.getVolume());
-            
-            cell = getCell(row, colIdx++);
-            cell.setCellValue(mt.getIntrabarVol());
-            
-            cell = getCell(row, colIdx++);
-            cell.setCellValue(mt.getTrendFollowing());
+            cell.setCellValue((int)mt.getVolume());            
         }
 	}
 	
-	public void writeHeaderRows(Block[] blocks)
+	public void writeHeaderRows(List<Block> blocks)
 	{
+		int barStart = 1;
+    	Date ts;
+		rowIdx = 7;
+	    sheet = wb.getSheet("graph");
+
 		for(Block block : blocks)
 		{
-			writeTrendHeaderRows(block.getTrends());
+		    for(int i = 1; i < block.getTrends().length; i++)
+		    {
+		    	Trend trend = block.getTrend(i);
+
+				row = getRow(rowIdx++);
+	            cell = getCell(row, 0);
+	            cell.setCellValue("B" + String.valueOf(block.getId()) + "." +
+	            				  "T" + String.valueOf(block.getId()));
+	            cell = getCell(row, 1);
+	            cell.setCellValue(trend.duration);
+	            cell = getCell(row, 2);
+	            cell.setCellValue("" + String.valueOf(barStart) + "-" + String.valueOf(barStart + trend.duration - 1));
+	            cell = getCell(row, 3);
+	            cell.setCellValue(trend.direction == 1 ? "long" : 
+	            					trend.direction == 0 ? "lateral" : "short");
+	            cell = getCell(row, 4);
+	            cell.setCellValue(trend.deltaPoints);
+	            cell = getCell(row, 5);
+	        	ts = new Date(trend.timestampStart);
+	            cell.setCellValue(date.format(ts));
+	            cell = getCell(row, 6);
+	        	ts = new Date(trend.timestampEnd);
+	            cell.setCellValue(date.format(ts));
+	            barStart += trend.duration;
+	        }
 		}
 	}
 
 	public void writeChanges() throws IOException
 	{
-    	outFilePath = "output" + File.separator + "stat-" + fileExtension + ".xlsx";
+    	outFilePath = "output" + File.separator + "stat-" + fileExtension + ".xlsm";
 		try (FileOutputStream fileOut = new FileOutputStream(outFilePath))
 		{
 		    wb.write(fileOut);
