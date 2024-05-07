@@ -19,6 +19,8 @@ public class MarketBar {
 	private double interest;
 	private double intrabarVol;
 	private int trendFollowing;
+	private long marketOpenTimestamp;
+	private long marketOpenHours;
 
     public MarketBar(long lastTimestamp, long msInterval, double intrabarVol, int trendFollowing) 
     {
@@ -103,14 +105,49 @@ public class MarketBar {
 	public void setTimestampOnCalendar(long lastTimestamp, long msInterval)
 	{
         Calendar c1 = Calendar.getInstance();
+        Calendar c2 = Calendar.getInstance();
         c1.setTime(new Date(lastTimestamp + msInterval));
-
-		if ((c1.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY) || 
-			(Calendar.DAY_OF_WEEK == Calendar.SUNDAY))
-		{
-			lastTimestamp += 172800000;
-		}
-		this.timestamp = lastTimestamp + msInterval;
+        if (c1.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY)
+        {
+            c1.add(Calendar.DAY_OF_YEAR, -1);
+        }
+        else if (c1.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY)
+        {
+            c1.add(Calendar.DAY_OF_YEAR, -2);
+        }
+        
+        c2.set(Calendar.YEAR, c1.get(Calendar.YEAR));
+        c2.set(Calendar.MONTH, c1.get(Calendar.MONTH));
+        c2.set(Calendar.DAY_OF_MONTH, c1.get(Calendar.DAY_OF_MONTH));
+        c2.set(Calendar.HOUR_OF_DAY, props.getStartMarketHour() + ((int) props.getMarketOpenedHours()));
+        c2.set(Calendar.MINUTE, props.getStartMarketMinute());
+        c2.set(Calendar.SECOND, props.getStartMarketSecond() + 1);
+        
+        if (c1.compareTo(c2) >= 0)
+        {
+        	c1.add(Calendar.DAY_OF_YEAR, 1);
+            c1.set(Calendar.HOUR_OF_DAY, props.getStartMarketHour());
+            c1.set(Calendar.MINUTE, props.getStartMarketMinute());
+            c1.set(Calendar.SECOND, props.getStartMarketSecond());
+        }
+        
+        switch(c1.get(Calendar.DAY_OF_WEEK) )
+        {
+        case Calendar.SATURDAY:
+        	c1.add(Calendar.DAY_OF_YEAR, 2);
+            c1.set(Calendar.HOUR_OF_DAY, props.getStartMarketHour());
+            c1.set(Calendar.MINUTE, props.getStartMarketMinute());
+            c1.set(Calendar.SECOND, props.getStartMarketSecond());
+        	break;
+        case Calendar.SUNDAY:
+        	c1.add(Calendar.DAY_OF_YEAR, 1);
+            c1.set(Calendar.HOUR_OF_DAY, props.getStartMarketHour());
+            c1.set(Calendar.MINUTE, props.getStartMarketMinute());
+            c1.set(Calendar.SECOND, props.getStartMarketSecond());
+        	break;
+        }
+        
+		this.timestamp = c1.getTimeInMillis();
 	}
 
 	public double getOpen() {
@@ -175,6 +212,22 @@ public class MarketBar {
 
 	public void setIntrabarVol(double intrabarVol) {
 		this.intrabarVol = intrabarVol;
+	}
+
+	public long getMarketOpenTimestamp() {
+		return marketOpenTimestamp;
+	}
+
+	public void setMarketOpenTimestamp(long marketOpenTimestamp) {
+		this.marketOpenTimestamp = marketOpenTimestamp;
+	}
+
+	public long getMarketOpenHours() {
+		return marketOpenHours;
+	}
+
+	public void setMarketOpenHours(long marketOpenHours) {
+		this.marketOpenHours = marketOpenHours;
 	}
 
 	@Override

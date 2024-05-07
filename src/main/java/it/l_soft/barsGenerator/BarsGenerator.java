@@ -6,6 +6,7 @@ import java.io.PrintWriter;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -30,7 +31,17 @@ public class BarsGenerator {
 
     	System.out.println("Simulation startin on date: " + props.getStartDate());
     	System.out.println("Writing results in: " + System.getProperty("user.dir"));
-    	MarketBar mb = new MarketBar(sdf.parse(props.getStartDate()).getTime() , 0, 0, 0);
+    	
+    	Date startTimeStamp = sdf.parse(props.getStartDate() + " " + props.getStartTime());
+    	Calendar cal = Calendar.getInstance();
+    	cal.setTime(startTimeStamp);
+    	cal.add(Calendar.DAY_OF_YEAR, -1);
+    	cal.set(Calendar.HOUR_OF_DAY, (int)(props.getMarketOpenedHours() + props.getStartMarketHour()));
+    	cal.set(Calendar.MINUTE, 0);
+    	cal.set(Calendar.SECOND, 0);
+    	startTimeStamp = cal.getTime();
+
+    	MarketBar mb = new MarketBar(startTimeStamp.getTime(), 0, 0, 0);
     	mb.setClose(props.getStartPrice());
     	mb.setOpen(props.getStartPrice());
     	
@@ -51,12 +62,16 @@ public class BarsGenerator {
         }
         allBars.remove(0);
         
+        String pathToSave = 
+        		(props.getCSVArchiveFolderPath() != null ? 
+        				props.getCSVArchiveFolderPath()  + File.separator : 
+        				System.getProperty("user.dir") + File.separator + "output" + File.separator);
         
-	    String pathToSave = System.getProperty("user.dir") + 
-				    File.separator + "output" + File.separator;
 	    String runExtension = new SimpleDateFormat("yyMMdd_HHmmss_").format(new Date());
+        String outFileName = 
+        		(props.getOutputFileNamePreamble() != null ? props.getOutputFileNamePreamble() : "tradiaBars"); 
 
-	    PrintWriter tradiaWriter = new PrintWriter(pathToSave + runExtension + "tradiaBars.csv", "UTF-8");
+	    PrintWriter tradiaWriter = new PrintWriter(pathToSave + outFileName + "_" + runExtension + ".csv", "UTF-8");
 	    int barIdx = 0;
 	    int pCount = 0;
 	    for(Block block: period)

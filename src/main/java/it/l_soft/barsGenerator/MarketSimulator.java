@@ -184,18 +184,20 @@ public class MarketSimulator {
 		List<MarketBar> blockBars = new ArrayList<MarketBar>();
 		Trend trendPrev = block.getTrend(0);
 		trendPrev.closePrice = openPrice;
-		trendPrev.timestampEnd = timestamp - props.getBarsIntervalInMinutes() * 60000;
+		trendPrev.timestampEnd = timestamp;
 		
-		previousBar = new MarketBar(trendPrev.timestampEnd, props.getBarsIntervalInMinutes() * 60000, 0, 0); // the simulated previous mkt bar
+		previousBar = new MarketBar(trendPrev.timestampEnd, 0, 0, 0); // the simulated previous mkt bar
 		previousBar.setClose(closePrice);
 		previousBar.setOpen(openPrice);
 		for(int y = 0; y < block.getNumOfTrends(); y++)
 		{
 			trendSign = 0;
 			trendCur = block.getTrend(y + 1);
+			trendCur.id = y + 1;
 			trendCur.openPrice = previousBar.getClose();
 			trendCur.targetPrice = trendCur.openPrice + trendCur.deltaPoints;
 			trendCur.timestampStart = trendPrev.timestampEnd + props.getBarsIntervalInMinutes() * 60000;
+			
 			trendCur.currentBar = 0;
 			approachingEndOfTrend = false;
 

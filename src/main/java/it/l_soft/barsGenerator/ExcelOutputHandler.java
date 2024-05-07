@@ -19,7 +19,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbookFactory;
 
 public class ExcelOutputHandler {
-	
+	ApplicationProperties props = ApplicationProperties.getInstance();
 	OPCPackage pkg;
     OutputStream os;
 	XSSFWorkbook wb;
@@ -31,12 +31,13 @@ public class ExcelOutputHandler {
     int rowIdx; // current row
 
     String outFilePath;
-    String fileExtension;
-	SimpleDateFormat date = new SimpleDateFormat("dd/MM/YYYY HH:mm");
+ 	SimpleDateFormat date = new SimpleDateFormat("dd/MM/YYYY HH:mm");
     
     public ExcelOutputHandler(String fileExtension) throws InvalidFormatException, IOException
 	{
-    	this.fileExtension = fileExtension;
+    	outFilePath = props.getExcelArchiveFolderPath() + File.separator + 
+    				  props.getOutputFileNamePreamble() +
+    				  fileExtension + ".xlsm";
     	InputStream inp = new FileInputStream("output" + File.separator + "statistics.xlsm");
 		wb = XSSFWorkbookFactory.createWorkbook(inp);
    	}
@@ -96,6 +97,7 @@ public class ExcelOutputHandler {
 		rowIdx = 7;
 	    sheet = wb.getSheet("graph");
 
+	    SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/YYYY");
 		for(Block block : blocks)
 		{
 		    for(int i = 1; i < block.getTrends().length; i++)
@@ -105,7 +107,7 @@ public class ExcelOutputHandler {
 				row = getRow(rowIdx++);
 	            cell = getCell(row, 0);
 	            cell.setCellValue("B" + String.valueOf(block.getId()) + "." +
-	            				  "T" + String.valueOf(block.getId()));
+	            				  "T" + String.valueOf(trend.id));
 	            cell = getCell(row, 1);
 	            cell.setCellValue(trend.duration);
 	            cell = getCell(row, 2);
@@ -116,11 +118,15 @@ public class ExcelOutputHandler {
 	            cell = getCell(row, 4);
 	            cell.setCellValue(trend.deltaPoints);
 	            cell = getCell(row, 5);
-	        	ts = new Date(trend.timestampStart);
-	            cell.setCellValue(date.format(ts));
+	            cell.setCellValue(trend.openPrice);
 	            cell = getCell(row, 6);
+	            cell.setCellValue(trend.closePrice);
+	            cell = getCell(row, 7);
+	        	ts = new Date(trend.timestampStart);
+	            cell.setCellValue(sdf.format(ts));
+	            cell = getCell(row, 8);
 	        	ts = new Date(trend.timestampEnd);
-	            cell.setCellValue(date.format(ts));
+	            cell.setCellValue(sdf.format(ts));
 	            barStart += trend.duration;
 	        }
 		}
@@ -128,7 +134,6 @@ public class ExcelOutputHandler {
 
 	public void writeChanges() throws IOException
 	{
-    	outFilePath = "output" + File.separator + "stat-" + fileExtension + ".xlsm";
 		try (FileOutputStream fileOut = new FileOutputStream(outFilePath))
 		{
 		    wb.write(fileOut);

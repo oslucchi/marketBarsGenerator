@@ -13,6 +13,10 @@ public class ApplicationProperties {
 	private static ApplicationProperties instance = null;
 	final Logger log = Logger.getLogger(this.getClass());
 	
+	private String outputFileNamePreamble;
+	private String CSVArchiveFolderPath;
+	private String ExcelArchiveFolderPath;
+	
 	private String decimalSeparator;
 	private String fieldSeparator;
 
@@ -27,6 +31,7 @@ public class ApplicationProperties {
 	private double probabilityToEnterTrend;
 	private double considerApproachingEndOfTrend;
 	private String startDate;
+	private String startTime;
 	private double marketOpenedHours;
 	private int totalNumberOfPeriodsToGenerate;
 	private boolean blocksSequenceRandom;
@@ -105,7 +110,8 @@ public class ApplicationProperties {
     	{
 			variable = "decimalSeparator";
 			try {
-				decimalSeparator = properties.getProperty(variable).trim();			}
+				decimalSeparator = properties.getProperty(variable).trim();		
+			}
 			catch(Exception e)
 			{
 				decimalSeparator = null;
@@ -118,6 +124,32 @@ public class ApplicationProperties {
 			{
 				fieldSeparator = null;
 			}
+			
+			variable = "outputFileNamePreamble";
+			try {
+				outputFileNamePreamble = properties.getProperty(variable).trim();
+			}
+			catch(Exception e)
+			{
+				outputFileNamePreamble = null;
+			}
+			variable = "CSVArchiveFolderPath";
+			try {
+				CSVArchiveFolderPath = properties.getProperty(variable).trim();
+			}
+			catch(Exception e)
+			{
+				CSVArchiveFolderPath = null;
+			}
+			variable = "ExcelArchiveFolderPath";
+			try {
+				ExcelArchiveFolderPath = properties.getProperty(variable).trim();
+			}
+			catch(Exception e)
+			{
+				ExcelArchiveFolderPath = null;
+			}
+
 			variable = "numOfBlocks";
 			numOfBlocks = Integer.parseInt(properties.getProperty(variable).trim());
 			variable = "barsIntervalInMinutes";
@@ -135,7 +167,7 @@ public class ApplicationProperties {
 	        variable = "initialVolume";
 	        initialVolume = Integer.parseInt(properties.getProperty(variable).trim());
 	        variable = "marketOpenedHours";
-	        marketOpenedHours = Double.parseDouble(properties.getProperty(variable).trim()) / 100;
+	        marketOpenedHours = Double.parseDouble(properties.getProperty(variable).trim());
 	        variable = "considerApproachingEndOfTrend";
 	        considerApproachingEndOfTrend = Double.parseDouble(properties.getProperty(variable).trim()) / 100;
 	        variable = "probabilityToEnterTrend";
@@ -144,6 +176,8 @@ public class ApplicationProperties {
 	        totalNumberOfPeriodsToGenerate = Integer.parseInt(properties.getProperty(variable).trim());
 	        variable = "startDate";
 	        startDate = properties.getProperty(variable).trim();
+	        variable = "startTime";
+	        startTime = properties.getProperty(variable).trim();
 	        variable = "blocksSequenceRandom";
 	        blocksSequenceRandom = Boolean.parseBoolean(properties.getProperty(variable).trim());
 	        
@@ -325,4 +359,33 @@ public class ApplicationProperties {
 	public boolean getForceConvergenceOnLastBar() {
 		return forceConvergenceOnLastBar;
 	}
+
+	public String getCSVArchiveFolderPath() {
+		return CSVArchiveFolderPath;
+	}
+	
+	public String getExcelArchiveFolderPath() {
+		return ExcelArchiveFolderPath;
+	}
+
+	public String getOutputFileNamePreamble() {
+		return outputFileNamePreamble;
+	}
+
+	public String getStartTime() {
+		return startTime;
+	}
+	
+	public int getStartMarketHour() {
+		return Integer.parseInt(startTime.substring(0,2));
+	}
+	
+	public int getStartMarketMinute() {
+		return Integer.parseInt(startTime.substring(3,5));
+	}
+
+	public int getStartMarketSecond() {
+		return Integer.parseInt(startTime.substring(6,8));
+	}
+
 }
