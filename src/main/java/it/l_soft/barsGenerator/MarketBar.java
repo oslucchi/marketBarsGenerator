@@ -60,12 +60,12 @@ public class MarketBar {
 		{
 			if (props.getUseRandomOnBothHighAndLow())
 			{
-				shadowSize[LOW] = Math.round((barBodySize * shadowsSizePercentage[1]) / props.getMarketTick()) * 
+				shadowSize[LOW] = Math.round((barBodySize * shadowsSizePercentageOfPriceBar) / props.getMarketTick()) * 
 						  		  props.getMarketTick();
 				shadowsSizePercentageOfPriceBar = (props.getRand().nextDouble() * 
 									(shadowsSizePercentage[1] - shadowsSizePercentage[0]) +
 									shadowsSizePercentage[0]);
-				shadowSize[HIGH] = Math.round((barBodySize * shadowsSizePercentage[1]) / props.getMarketTick()) * 
+				shadowSize[HIGH] = Math.round((barBodySize * shadowsSizePercentageOfPriceBar) / props.getMarketTick()) * 
 								   props.getMarketTick();
 			}
 			else

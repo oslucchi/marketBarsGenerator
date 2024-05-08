@@ -16,6 +16,8 @@ public class Trend implements Cloneable {
 	double openPrice;
 	double closePrice;
 	double targetPrice;
+	double lower;
+	double higher;
 	long timestampStart;
 	long timestampEnd;
 	ArrayList<InnerTrend> innerTrends = new ArrayList<>();

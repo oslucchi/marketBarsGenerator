@@ -149,15 +149,17 @@ public class MarketSimulator {
 
 		if (trendCur.direction == 0)
 		{
-			if (random > 0)
+			if (previousBar.getClose() > trendCur.openPrice)
 			{
-				barSize = trendCur.targetPrice - previousBar.getClose();
+				random -= 0.5 - ((trendCur.higher - previousBar.getClose()) / 
+							trendCur.deltaPoints);
 			}
 			else
 			{
-				barSize = previousBar.getClose() - trendCur.openPrice;
+				random += 0.5 - ((previousBar.getClose() - trendCur.lower) / 
+							trendCur.deltaPoints);
 			}
-			intrabarVol = barSize * random;
+			intrabarVol = (trendCur.deltaPoints * random) / previousBar.getClose();
 		}
 		else
 		{
@@ -214,7 +216,19 @@ public class MarketSimulator {
 			trendCur = block.getTrend(y + 1);
 			trendCur.id = y + 1;
 			trendCur.openPrice = previousBar.getClose();
-			trendCur.targetPrice = trendCur.openPrice + trendCur.deltaPoints;
+			if (trendCur.direction != 0)
+			{
+				trendCur.targetPrice = trendCur.openPrice + trendCur.deltaPoints;
+				trendCur.higher = (trendCur.direction == 1 ? trendCur.targetPrice : trendCur.openPrice);
+				trendCur.lower = (trendCur.direction == 1 ? trendCur.openPrice : trendCur.targetPrice);
+			}
+			else
+			{
+				trendCur.targetPrice = trendCur.openPrice;
+				trendCur.higher = trendCur.openPrice + trendCur.deltaPoints / 2;
+				trendCur.lower = trendCur.openPrice - trendCur.deltaPoints / 2;
+			}
+			
 			trendCur.timestampStart = trendPrev.timestampEnd + props.getBarsIntervalInMinutes() * 60000;
 			
 			trendCur.currentBar = 0;
