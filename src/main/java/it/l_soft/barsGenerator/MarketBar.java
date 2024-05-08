@@ -52,24 +52,29 @@ public class MarketBar {
 			{
 				shadowsSizePercentage[1] = shadowsSizePercentageOfPriceBar;
 			}
-			shadowSize[LOW] = barBodySize * shadowsSizePercentage[1];
+			shadowSize[LOW] = Math.round((barBodySize * shadowsSizePercentage[1]) / props.getMarketTick()) * 
+							  props.getMarketTick();
 			shadowSize[HIGH] = shadowSize[LOW];
 		}
 		else
 		{
 			if (props.getUseRandomOnBothHighAndLow())
 			{
-				shadowSize[LOW] = barBodySize * shadowsSizePercentageOfPriceBar;
+				shadowSize[LOW] = Math.round((barBodySize * shadowsSizePercentage[1]) / props.getMarketTick()) * 
+						  		  props.getMarketTick();
 				shadowsSizePercentageOfPriceBar = (props.getRand().nextDouble() * 
 									(shadowsSizePercentage[1] - shadowsSizePercentage[0]) +
 									shadowsSizePercentage[0]);
-				shadowSize[HIGH] = barBodySize * shadowsSizePercentageOfPriceBar;
+				shadowSize[HIGH] = Math.round((barBodySize * shadowsSizePercentage[1]) / props.getMarketTick()) * 
+								   props.getMarketTick();
 			}
 			else
 			{
 				barBodySize *= 2 * shadowsSizePercentageOfPriceBar;
-				shadowSize[LOW] = barBodySize * props.getRand().nextDouble();
-				shadowSize[HIGH] = barBodySize - shadowSize[LOW];
+				shadowSize[LOW] = Math.round((barBodySize * props.getRand().nextDouble()) / props.getMarketTick()) * 
+								  props.getMarketTick();
+				shadowSize[HIGH] = Math.round((barBodySize - shadowSize[LOW]) / props.getMarketTick()) * 
+								   props.getMarketTick();
 			}
 		}
 		

@@ -129,11 +129,11 @@ public class MarketSimulator {
 	{
 		double barSize = 1;
 		double barSizeBand = props.getRand().nextDouble();
-		for(int k = 0; k < props.getBarsShadowNumOfBarsPercentage().length; k++)
+		for(int k = 0; k < props.getBarsSizeNumOfBarsPercentage().length; k++)
 		{
-			if (barSizeBand <= props.getBarsShadowNumOfBarsPercentage()[k])
+			if (barSizeBand <= props.getBarsSizeNumOfBarsPercentage()[k])
 			{
-				barSize = props.getBarsShadowAverageBarSizePercentage()[k];
+				barSize = props.getBarsSizeAverageBarSizePercentage()[k];
 				break;
 			}
 		}
@@ -142,33 +142,52 @@ public class MarketSimulator {
 	
 	private double nextBarVol()
 	{
-		double barSize = calculateBarSize();
-		
-		double random = (props.getRand().nextDouble() - .5);
-		if (forceRebound)
+		double intrabarVol;
+		double barSize;
+		double random;
+		random = (props.getRand().nextDouble() - .5);
+
+		if (trendCur.direction == 0)
 		{
-			random += directionToGo * .5;
-			log.trace(
-					String.format("Bar %d - Rebound forced as %6.4f. open %8.2f - target %8.2f - last close %8.2f - last open %8.2f", 
-								trendCur.currentBar,  
-								random,
-								trendCur.openPrice,
-								trendCur.targetPrice,
-								previousBar.getOpen(),
-								previousBar.getClose()
-					));
-		}
-		else if (approachingEndOfTrend)
-		{
-				// random = random + trendSign * .5;
-			random = props.getRand().nextDouble() / 4 * trendSign + .75;
-			random *= directionToGo;
+			if (random > 0)
+			{
+				barSize = trendCur.targetPrice - previousBar.getClose();
+			}
+			else
+			{
+				barSize = previousBar.getClose() - trendCur.openPrice;
+			}
+			intrabarVol = barSize * random;
 		}
 		else
 		{
-			random = random + (trendSign == 0 ? directionToGo : trendSign) * .1;
+			barSize = calculateBarSize();
+			
+			if (forceRebound)
+			{
+				random += directionToGo * .5;
+				log.trace(
+						String.format("Bar %d - Rebound forced as %6.4f. open %8.2f - target %8.2f - last close %8.2f - last open %8.2f", 
+									trendCur.currentBar,  
+									random,
+									trendCur.openPrice,
+									trendCur.targetPrice,
+									previousBar.getOpen(),
+									previousBar.getClose()
+						));
+			}
+			else if (approachingEndOfTrend)
+			{
+					// random = random + trendSign * .5;
+				random = Math.abs(props.getRand().nextDouble() / 4) + .75;
+				random *= directionToGo;
+			}
+			else
+			{
+				random = random + (trendSign == 0 ? directionToGo : trendSign) * .1;
+			}
+			intrabarVol = block.getMaxIntrabarVol() * barSize * random;
 		}
-		double intrabarVol = block.getMaxIntrabarVol() * barSize * random;
 		return intrabarVol;
 	}
 	
@@ -221,6 +240,7 @@ public class MarketSimulator {
 				// presence of an innerMiniTrend
 				currentBar.setIntrabarVol(nextBarVol());
 				double priceChange = previousBar.getClose() * currentBar.getIntrabarVol();
+				priceChange = Math.round(priceChange * (1 / props.getMarketTick())) * props.getMarketTick();
 				
 				if ((trendCur.direction != 0) &&
 					((previousBar.getClose() + priceChange >= 

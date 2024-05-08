@@ -21,7 +21,7 @@ public class ApplicationProperties {
 	private String fieldSeparator;
 
 	private int numOfBlocks;
-	private int	maxBarSize;
+	private double	marketTick;
 	private int barsIntervalInMinutes;
 	private int initialVolume;
 	private boolean sameHighAndLowDepth;
@@ -37,8 +37,8 @@ public class ApplicationProperties {
 	private boolean blocksSequenceRandom;
 	private int[] blocksSequence;
 	private double startPrice;
-	private double[] barsShadow_numOfBarsPercentage;
-	private double[] barsShadow_averageBarSizePercentage;
+	private double[] barsSize_numOfBarsPercentage;
+	private double[] barsSize_averageBarSizePercentage;
 	private Block[] blocks;
 	private Random rand;
 	private static String propertiesPath = null;
@@ -154,8 +154,8 @@ public class ApplicationProperties {
 			numOfBlocks = Integer.parseInt(properties.getProperty(variable).trim());
 			variable = "barsIntervalInMinutes";
 			barsIntervalInMinutes = Integer.parseInt(properties.getProperty(variable).trim());
-			variable = "maxBarSize";
-			maxBarSize = Integer.parseInt(properties.getProperty(variable).trim());
+			variable = "marketTick";
+			marketTick = Double.parseDouble(properties.getProperty(variable).trim());
 			variable = "sameHighAndLowDepth";
 			sameHighAndLowDepth = Boolean.parseBoolean(properties.getProperty(variable).trim());
 			variable = "useRandomOnBothHighAndLow";
@@ -208,20 +208,20 @@ public class ApplicationProperties {
 				totalNumberOfPeriodsToGenerate = values.length;
 			}
 
-			variable = "barsShadow_numOfBarsPercentage";
-			values = properties.getProperty("barsShadow.numOfBarsPercentage").split(",");
-			barsShadow_numOfBarsPercentage = new double[values.length];
+			variable = "barsSize_numOfBarsPercentage";
+			values = properties.getProperty("barsSize.numOfBarsPercentage").split(",");
+			barsSize_numOfBarsPercentage = new double[values.length];
 			for(int i = 0; i < values.length; i++)
 			{
-				barsShadow_numOfBarsPercentage[i] = Double.parseDouble(values[i].trim()) / 100;
+				barsSize_numOfBarsPercentage[i] = Double.parseDouble(values[i].trim()) / 100;
 			}
 			
-			variable = "barsShadow_averageBarSizePercentage";
-			values = properties.getProperty("barsShadow.averageBarSizePercentage").split(",");
-			barsShadow_averageBarSizePercentage = new double[values.length];
+			variable = "barsSize_averageBarSizePercentage";
+			values = properties.getProperty("barsSize.averageBarSizePercentage").split(",");
+			barsSize_averageBarSizePercentage = new double[values.length];
 			for(int i = 0; i < values.length; i++)
 			{
-				barsShadow_averageBarSizePercentage[i] = Double.parseDouble(values[i].trim()) / 100;
+				barsSize_averageBarSizePercentage[i] = Double.parseDouble(values[i].trim()) / 100;
 			}
 			
 			blocks = new Block[numOfBlocks];
@@ -284,8 +284,8 @@ public class ApplicationProperties {
 		return barsIntervalInMinutes;
 	}
 
-	public int getMaxBarSize() {
-		return maxBarSize;
+	public double getMarketTick() {
+		return marketTick;
 	}
 
 	public int getInitialVolume() {
@@ -320,12 +320,12 @@ public class ApplicationProperties {
 		return startPrice;
 	}
 
-	public double[] getBarsShadowNumOfBarsPercentage() {
-		return barsShadow_numOfBarsPercentage;
+	public double[] getBarsSizeNumOfBarsPercentage() {
+		return barsSize_numOfBarsPercentage;
 	}
 
-	public double[] getBarsShadowAverageBarSizePercentage() {
-		return barsShadow_averageBarSizePercentage;
+	public double[] getBarsSizeAverageBarSizePercentage() {
+		return barsSize_averageBarSizePercentage;
 	}
 
 	public Block getBlock(int index) {
