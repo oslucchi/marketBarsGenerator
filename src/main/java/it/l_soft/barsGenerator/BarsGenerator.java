@@ -67,7 +67,7 @@ public class BarsGenerator {
         				props.getCSVArchiveFolderPath()  + File.separator : 
         				System.getProperty("user.dir") + File.separator + "output" + File.separator);
         
-	    String runExtension = new SimpleDateFormat("yyMMdd_HHmmss_").format(new Date());
+	    String runExtension = new SimpleDateFormat("yyMMdd_HHmmss").format(new Date());
         String outFileName = 
         		(props.getOutputFileNamePreamble() != null ? props.getOutputFileNamePreamble() : "tradiaBars"); 
 
