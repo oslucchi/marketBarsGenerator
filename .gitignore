@@ -1,2 +1,4 @@
 /target/
+/output/excel/
 /output/
+!/output/statistics.xlsm
