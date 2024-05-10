@@ -27,7 +27,9 @@ public class ApplicationProperties {
 	private boolean sameHighAndLowDepth;
 	private boolean useRandomOnBothHighAndLow;
 	private boolean forceConvergenceOnLastBar;
-	private double[] shadowSizeInBarPercentage;
+	private boolean capIntradayVol;
+	private double[] shadowSize_numOfBarsPercentage;
+	private double[] shadowSize_averageBarSizePercentage;
 	private double probabilityToEnterTrend;
 	private double considerApproachingEndOfTrend;
 	private String startDate;
@@ -184,12 +186,20 @@ public class ApplicationProperties {
 	        variable = "blocksSequenceRandom";
 	        blocksSequenceRandom = Boolean.parseBoolean(properties.getProperty(variable).trim());
 	        
-	        variable = "shadowSizeInBarPercentage";
+	        variable = "shadowSize.numOfBarsPercentage";
 			values = properties.getProperty(variable).split(",");
-			shadowSizeInBarPercentage = new double[values.length];
+			shadowSize_numOfBarsPercentage = new double[values.length];
 			for(int i = 0; i < values.length; i++)
 			{
-				shadowSizeInBarPercentage[i] = Double.parseDouble(values[i].trim());
+				shadowSize_numOfBarsPercentage[i] = Double.parseDouble(values[i].trim()) / 100;
+			}
+
+	        variable = "shadowSize.averageBarSizePercentage";
+			values = properties.getProperty(variable).split(",");
+			shadowSize_averageBarSizePercentage = new double[values.length];
+			for(int i = 0; i < values.length; i++)
+			{
+				shadowSize_averageBarSizePercentage[i] = Double.parseDouble(values[i].trim()) / 100;
 			}
 
 			variable = "blocksSequence";
@@ -239,7 +249,7 @@ public class ApplicationProperties {
 			intradayVolDistValue = new double[values.length];
 			for(int i = 0; i < values.length; i++)
 			{
-				intradayVolDistValue[i] = Double.parseDouble(values[i].trim());
+				intradayVolDistValue[i] = Double.parseDouble(values[i].trim()) / 100;
 			}
 			
 
@@ -264,6 +274,9 @@ public class ApplicationProperties {
 			        variable = "B" + i + ".T" + y +".deltaPoints";
 			        trend.deltaPoints = Integer.parseInt(properties.getProperty(variable).trim()) * 
 			        									 (trend.direction != 0 ? trend.direction : 1);
+			        
+			        variable = "B" + i + ".T" + y +".capIntradayVol";
+			        trend.capIntradayVol = Boolean.parseBoolean(properties.getProperty(variable).trim());
 			        
 			        variable = "B" + i + ".T" + y +".enableMiniTrends";
 			        trend.enableMiniTrends = Boolean.parseBoolean(properties.getProperty(variable).trim());
@@ -359,8 +372,12 @@ public class ApplicationProperties {
 		return sameHighAndLowDepth;
 	}
 
-	public double getShadowSizeInBarPercentage(int index) {
-		return shadowSizeInBarPercentage[index] / 100;
+	public double[] getShadowSizeNumOfBarsPercentage() {
+		return shadowSize_numOfBarsPercentage;
+	}
+
+	public double[] getShadowSizeAverageBarSizePercentage() {
+		return shadowSize_averageBarSizePercentage;
 	}
 
 	public double getConsiderApproachingEndOfTrend() {
@@ -413,6 +430,18 @@ public class ApplicationProperties {
 
 	public double getIntradayVolDistValue(int index) {
 		return intradayVolDistValue[index];
+	}
+	
+	public double[] getIntradayVolDistrPerc() {
+		return intradayVolDistrPerc;
+	}
+
+	public double[] getIntradayVolDistValue() {
+		return intradayVolDistValue;
+	}
+
+	public boolean getCapIntradayVol() {
+		return capIntradayVol;
 	}
 
 	

@@ -1,6 +1,8 @@
 package it.l_soft.barsGenerator;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import org.apache.log4j.Logger;
@@ -17,6 +19,7 @@ public class MarketSimulator {
 	private int trendSign = 0;
 	private int barsFollowingTrend;
 	private double directionToGo = 1;
+	private double totIntradayVol = 0;
 	private Trend trendCur;
 	private Block block;
 	private boolean forceRebound = false;
@@ -163,15 +166,20 @@ public class MarketSimulator {
 
 		if (trendCur.direction == 0)
 		{
-			if (previousBar.getClose() > trendCur.openPrice)
+			if (forceRebound)
 			{
-				random -= 0.5 - ((trendCur.higher - previousBar.getClose()) / 
-							trendCur.deltaPoints);
+				random += directionToGo * .5;
 			}
 			else
 			{
-				random += 0.5 - ((previousBar.getClose() - trendCur.lower) / 
-							trendCur.deltaPoints);
+				if (previousBar.getClose() > trendCur.targetPrice)
+				{
+					random -= 0.5 * ((previousBar.getClose() - trendCur.targetPrice) / trendCur.deltaPoints);
+				}
+				else
+				{
+					random += 0.5 * ((trendCur.targetPrice - previousBar.getClose()) / trendCur.deltaPoints);
+				}
 			}
 			intrabarVol = (trendCur.deltaPoints * random) / previousBar.getClose();
 		}
@@ -203,7 +211,15 @@ public class MarketSimulator {
 				random = random + (trendSign == 0 ? directionToGo : trendSign) * .1;
 			}
 			intrabarVol = block.getMaxIntrabarVol() * barSize * random;
+			if (trendCur.capIntradayVol &&
+				(Math.abs(totIntradayVol + intrabarVol) > currentBar.getIntradayVol()) && 
+				!approachingEndOfTrend)
+			{
+				intrabarVol *= -1;
+			}
 		}
+
+		totIntradayVol += intrabarVol;
 		return intrabarVol;
 	}
 	
@@ -240,7 +256,7 @@ public class MarketSimulator {
 			}
 			else
 			{
-				trendCur.targetPrice = trendCur.openPrice;
+				trendCur.targetPrice = trendCur.openPrice + trendCur.deltaPoints;
 				trendCur.higher = trendCur.openPrice + trendCur.deltaPoints / 2;
 				trendCur.lower = trendCur.openPrice - trendCur.deltaPoints / 2;
 			}
@@ -261,7 +277,29 @@ public class MarketSimulator {
 					log.debug("Current bar " + i + " entering the approachingEnd phase");
 				}
 				trendCur.currentBar++;
+
 				currentBar = new MarketBar(previousBar.getTimestamp(), props.getBarsIntervalInMinutes() * 60000, 0, 0);
+				// Bring the calculated max intraday volatility populated with each
+				// bar of the same day to simplify checks. On a new day, the total day volatily
+				// is reset to 0
+				if (currentBar.getStartOfDayBar())
+				{
+					if (trendCur.capIntradayVol)
+					{
+						System.out.println(
+								"Day " + 
+								new SimpleDateFormat("yyyy/MM/dd")
+									.format(new Date(previousBar.getTimestamp())) +
+								" closed with intradayVol at " + 
+								String.format("%8.5f", totIntradayVol * 100));
+					}
+					totIntradayVol = 0;
+				}
+				else
+				{
+					currentBar.setIntradayVol(previousBar.getIntradayVol());
+				}
+				
 				currentBar.setOpen(previousBar.getClose()); // the openPrice is set to the last close price
 				
 				// Evaluate if an innertMiniTrend starts and record it eventually
@@ -270,6 +308,14 @@ public class MarketSimulator {
 				
 				// Get where the next bar should go based on the current price, the open and target and the 
 				// presence of an innerMiniTrend
+				if (Math.abs(totIntradayVol) > currentBar.getIntradayVol() && 
+						trendCur.capIntradayVol)
+				{
+					System.out.println("Block " + block.getId() + " - Trend " + trendCur.id + " - bar " + i +
+										" maxIntradayVol " + String.format("%8.5f", currentBar.getIntradayVol() * 100) + 
+										" current intraday Vol " + 
+										String.format("%8.5f", totIntradayVol * 100));
+				}
 				currentBar.setIntrabarVol(nextBarVol());
 				double priceChange = previousBar.getClose() * currentBar.getIntrabarVol();
 				priceChange = Math.round(priceChange * (1 / props.getMarketTick())) * props.getMarketTick();

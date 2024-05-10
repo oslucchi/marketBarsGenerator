@@ -9,6 +9,7 @@ public class Trend implements Cloneable {
 	int duration;
 	int currentBar;
 	int deltaPoints;
+	boolean capIntradayVol;
 	boolean enableMiniTrends;
 	int maxBarPerTrend;
 	int minBarPerTrend;

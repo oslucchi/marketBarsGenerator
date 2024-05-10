@@ -18,9 +18,11 @@ public class MarketBar {
 	private double volume;
 	private double interest;
 	private double intrabarVol;
+	private double intradayVol;
 	private int trendFollowing;
 	private long marketOpenTimestamp;
 	private long marketOpenHours;
+	private boolean startOfDayBar;
 
     public MarketBar(long lastTimestamp, long msInterval, double intrabarVol, int trendFollowing) 
     {
@@ -28,6 +30,10 @@ public class MarketBar {
         this.interest = intrabarVol;
         this.intrabarVol = intrabarVol;
         this.trendFollowing= trendFollowing;
+        if (intradayVol == 0)
+        {
+        	intradayVol = props.getIntradayVolDistValue(0);
+        }
     }
     
     public void setHighAndLow()
@@ -35,46 +41,55 @@ public class MarketBar {
 		// Magnitude of the current bar
     	double barBodySize = Math.abs(close - open);
 
-		double[] shadowsSizePercentage = { 
-				props.getShadowSizeInBarPercentage(0),
-				props.getShadowSizeInBarPercentage(1)
-			};
-
 		double[] shadowSize = new double[2];
 		
-		double shadowsSizePercentageOfPriceBar = (props.getRand().nextDouble() * 
-												  (shadowsSizePercentage[1] - shadowsSizePercentage[0]) +
-												  shadowsSizePercentage[0]);
+		double shadowSizeBand = props.getRand().nextDouble();
+		for(int j = 0; j < 2; j++)
+		{
+			shadowSizeBand = props.getRand().nextDouble();
+			for(int k = 0; k < props.getShadowSizeNumOfBarsPercentage().length; k++)
+			{
+				if (shadowSizeBand <= props.getShadowSizeNumOfBarsPercentage()[k])
+				{
+					shadowSize[j] = props.getShadowSizeAverageBarSizePercentage()[k] / 2;
+					break;
+				}
+			}
+		}
 
+		shadowSize[LOW] = Math.round((barBodySize * shadowSize[LOW]) / props.getMarketTick()) * 
+				  props.getMarketTick();
+		
 		if (props.getSameHighAndLowDepth())
 		{
-			if (props.getUseRandomOnBothHighAndLow())
-			{
-				shadowsSizePercentage[1] = shadowsSizePercentageOfPriceBar;
-			}
-			shadowSize[LOW] = Math.round((barBodySize * shadowsSizePercentage[1]) / props.getMarketTick()) * 
-							  props.getMarketTick();
 			shadowSize[HIGH] = shadowSize[LOW];
 		}
 		else
 		{
 			if (props.getUseRandomOnBothHighAndLow())
 			{
-				shadowSize[LOW] = Math.round((barBodySize * shadowsSizePercentageOfPriceBar) / props.getMarketTick()) * 
-						  		  props.getMarketTick();
-				shadowsSizePercentageOfPriceBar = (props.getRand().nextDouble() * 
-									(shadowsSizePercentage[1] - shadowsSizePercentage[0]) +
-									shadowsSizePercentage[0]);
-				shadowSize[HIGH] = Math.round((barBodySize * shadowsSizePercentageOfPriceBar) / props.getMarketTick()) * 
+				shadowSize[HIGH] = Math.round((barBodySize * shadowSize[HIGH]) / props.getMarketTick()) * 
 								   props.getMarketTick();
 			}
 			else
 			{
-				barBodySize *= 2 * shadowsSizePercentageOfPriceBar;
-				shadowSize[LOW] = Math.round((barBodySize * props.getRand().nextDouble()) / props.getMarketTick()) * 
-								  props.getMarketTick();
-				shadowSize[HIGH] = Math.round((barBodySize - shadowSize[LOW]) / props.getMarketTick()) * 
-								   props.getMarketTick();
+				double partOfShadowAllocated = props.getRand().nextDouble();
+				double shadowsGreater = (partOfShadowAllocated > 0.5 ? partOfShadowAllocated : 1 - partOfShadowAllocated);
+				int highIdx, lowIdx;
+				if (close > open)
+				{
+					highIdx = 1;
+					lowIdx = 0;
+				}
+				else
+				{
+					highIdx = 0;
+					lowIdx = 1;
+				}
+				shadowSize[highIdx] = Math.round((shadowSize[LOW] * 2 * shadowsGreater) / props.getMarketTick()) * 
+						  props.getMarketTick();
+				shadowSize[lowIdx] = Math.round(shadowSize[LOW] * 2 * (1 - shadowsGreater) / props.getMarketTick()) * 
+						   props.getMarketTick();
 			}
 		}
 		
@@ -109,6 +124,8 @@ public class MarketBar {
 	
 	public void setTimestampOnCalendar(long lastTimestamp, long msInterval)
 	{
+		startOfDayBar = false;
+		
         Calendar c1 = Calendar.getInstance();
         Calendar c2 = Calendar.getInstance();
         c1.setTime(new Date(lastTimestamp + msInterval));
@@ -134,6 +151,7 @@ public class MarketBar {
             c1.set(Calendar.HOUR_OF_DAY, props.getStartMarketHour());
             c1.set(Calendar.MINUTE, props.getStartMarketMinute());
             c1.set(Calendar.SECOND, props.getStartMarketSecond());
+            startOfDayBar = true;
         }
         
         switch(c1.get(Calendar.DAY_OF_WEEK) )
@@ -143,16 +161,31 @@ public class MarketBar {
             c1.set(Calendar.HOUR_OF_DAY, props.getStartMarketHour());
             c1.set(Calendar.MINUTE, props.getStartMarketMinute());
             c1.set(Calendar.SECOND, props.getStartMarketSecond());
+            startOfDayBar = true;
         	break;
         case Calendar.SUNDAY:
         	c1.add(Calendar.DAY_OF_YEAR, 1);
             c1.set(Calendar.HOUR_OF_DAY, props.getStartMarketHour());
             c1.set(Calendar.MINUTE, props.getStartMarketMinute());
             c1.set(Calendar.SECOND, props.getStartMarketSecond());
+            startOfDayBar = true;
         	break;
         }
         
 		this.timestamp = c1.getTimeInMillis();
+		if (startOfDayBar)
+		{
+			// calculate today's intraday max volatility
+			intradayVol = props.getRand().nextDouble();
+			for(int i = 0; i < props.getIntradayVolDistrPerc().length; i++)
+			{
+				if (intradayVol < props.getIntradayVolDistrPerc()[i])
+				{
+					intradayVol = props.getIntradayVolDistValue()[i];
+					break;
+				}
+			}
+		}
 	}
 
 	public double getOpen() {
@@ -235,6 +268,18 @@ public class MarketBar {
 		this.marketOpenHours = marketOpenHours;
 	}
 
+	public double getIntradayVol() {
+		return intradayVol;
+	}
+
+	public void setIntradayVol(double intradayVol) {
+		this.intradayVol = intradayVol;
+	}
+
+	public boolean getStartOfDayBar() {
+		return startOfDayBar;
+	}
+
 	@Override
     public String toString() {
     	SimpleDateFormat df = new SimpleDateFormat("yyyy/MM/dd HH:mm");
@@ -262,4 +307,6 @@ public class MarketBar {
 							.replace(",", (props.getFieldSeparator() == null ? "," : props.getFieldSeparator()))
 							.replace(".", (props.getDecimalSeparator() == null ? "." : props.getDecimalSeparator()));
     }
+    
+    
 }
