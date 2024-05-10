@@ -39,6 +39,9 @@ public class ApplicationProperties {
 	private double startPrice;
 	private double[] barsSize_numOfBarsPercentage;
 	private double[] barsSize_averageBarSizePercentage;
+	private double[] intradayVolDistrPerc;
+	private double[] intradayVolDistValue;
+	
 	private Block[] blocks;
 	private Random rand;
 	private static String propertiesPath = null;
@@ -224,6 +227,22 @@ public class ApplicationProperties {
 				barsSize_averageBarSizePercentage[i] = Double.parseDouble(values[i].trim()) / 100;
 			}
 			
+			variable = "intradayVolDistrPerc";
+			values = properties.getProperty(variable).split(",");
+			intradayVolDistrPerc = new double[values.length];
+			for(int i = 0; i < values.length; i++)
+			{
+				intradayVolDistrPerc[i] = Double.parseDouble(values[i].trim()) / 100;
+			}
+			variable = "intradayVolDistValue";
+			values = properties.getProperty(variable).split(",");
+			intradayVolDistValue = new double[values.length];
+			for(int i = 0; i < values.length; i++)
+			{
+				intradayVolDistValue[i] = Double.parseDouble(values[i].trim());
+			}
+			
+
 			blocks = new Block[numOfBlocks];
 			for(int i = 1; i <= numOfBlocks; i++)
 			{
@@ -388,4 +407,13 @@ public class ApplicationProperties {
 		return Integer.parseInt(startTime.substring(6,8));
 	}
 
+	public double getIntradayVolDistrPerc(int index) {
+		return intradayVolDistrPerc[index];
+	}
+
+	public double getIntradayVolDistValue(int index) {
+		return intradayVolDistValue[index];
+	}
+
+	
 }
