@@ -330,7 +330,7 @@ public class MarketSimulator {
 					
 				}				
 				currentBar.setClose(previousBar.getClose() + priceChange);
-				currentBar.setHighAndLow();;
+				currentBar.setHighAndLow(i);
 				currentBar.setVolume(calculateVolume());
 
 				blockBars.add(currentBar);
@@ -342,7 +342,7 @@ public class MarketSimulator {
 				currentBar = new MarketBar(previousBar.getTimestamp(), props.getBarsIntervalInMinutes() * 60000, 0, 0);
 				currentBar.setOpen(previousBar.getClose()); // the openPrice is set to the last close price
 				currentBar.setClose(trendCur.targetPrice); // the openPrice is set to the last close price
-				currentBar.setHighAndLow();			
+				currentBar.setHighAndLow(1000);			
 				currentBar.setVolume(calculateVolume());
 				
 				blockBars.add(currentBar);

@@ -32,6 +32,7 @@ public class ApplicationProperties {
 	private double[] shadowSize_averageBarSizePercentage;
 	private double probabilityToEnterTrend;
 	private double considerApproachingEndOfTrend;
+	private double shadowSizeToFollowTrendDirectionAt;
 	private String startDate;
 	private String startTime;
 	private double marketOpenedHours;
@@ -169,6 +170,9 @@ public class ApplicationProperties {
 			forceConvergenceOnLastBar = Boolean.parseBoolean(properties.getProperty(variable).trim());
 			variable = "startPrice";
 	        startPrice = Double.parseDouble(properties.getProperty(variable).trim());
+	        variable = "shadowSizeToFollowTrendDirectionAt";
+	        shadowSizeToFollowTrendDirectionAt = 
+	        		Double.parseDouble(properties.getProperty(variable).trim()) / 100;
 	        variable = "initialVolume";
 	        initialVolume = Integer.parseInt(properties.getProperty(variable).trim());
 	        variable = "marketOpenedHours";
@@ -442,6 +446,10 @@ public class ApplicationProperties {
 
 	public boolean getCapIntradayVol() {
 		return capIntradayVol;
+	}
+
+	public double getShadowSizeToFollowTrendDirectionAt() {
+		return shadowSizeToFollowTrendDirectionAt;
 	}
 
 	

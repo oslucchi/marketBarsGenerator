@@ -36,7 +36,7 @@ public class MarketBar {
         }
     }
     
-    public void setHighAndLow()
+    public void setHighAndLow(int i)
     {
 		// Magnitude of the current bar
     	double barBodySize = Math.abs(close - open);
@@ -55,6 +55,19 @@ public class MarketBar {
 					break;
 				}
 			}
+		}
+
+		if (barBodySize / close < .00015)
+		{
+			barBodySize *= 6;
+		}
+		else if (barBodySize / close < .0003)
+		{
+			barBodySize *= 3;
+		}
+		else if (barBodySize / close < .0006)
+		{
+			barBodySize *= 2;
 		}
 
 		shadowSize[LOW] = Math.round((barBodySize * shadowSize[LOW]) / props.getMarketTick()) * 
@@ -76,7 +89,8 @@ public class MarketBar {
 				double partOfShadowAllocated = props.getRand().nextDouble();
 				double shadowsGreater = (partOfShadowAllocated > 0.5 ? partOfShadowAllocated : 1 - partOfShadowAllocated);
 				int highIdx, lowIdx;
-				if (close > open)
+				if ((close > open) && 
+					(props.getRand().nextDouble() < props.getShadowSizeToFollowTrendDirectionAt()))
 				{
 					highIdx = 1;
 					lowIdx = 0;
@@ -86,9 +100,9 @@ public class MarketBar {
 					highIdx = 0;
 					lowIdx = 1;
 				}
-				shadowSize[highIdx] = Math.round((shadowSize[LOW] * 2 * shadowsGreater) / props.getMarketTick()) * 
+				shadowSize[highIdx] = Math.round((shadowSize[LOW] * shadowsGreater) / props.getMarketTick()) * 
 						  props.getMarketTick();
-				shadowSize[lowIdx] = Math.round(shadowSize[LOW] * 2 * (1 - shadowsGreater) / props.getMarketTick()) * 
+				shadowSize[lowIdx] = Math.round(shadowSize[LOW] * (1 - shadowsGreater) / props.getMarketTick()) * 
 						   props.getMarketTick();
 			}
 		}
@@ -105,6 +119,7 @@ public class MarketBar {
     	return;
     }
     
+    /*
     public void populateObject(double open, double priceChange, double volume)
     {
     	this.open = open;
@@ -113,6 +128,7 @@ public class MarketBar {
     	setHighAndLow();
     	return;
     }
+    */
    
     public long getTimestamp() {
 		return timestamp;
