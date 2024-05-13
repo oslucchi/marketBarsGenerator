@@ -36,12 +36,12 @@ public class BarsGenerator {
     	Calendar cal = Calendar.getInstance();
     	cal.setTime(startTimeStamp);
     	cal.add(Calendar.DAY_OF_YEAR, -1);
-    	cal.set(Calendar.HOUR_OF_DAY, (int)(props.getMarketOpenedHours() + props.getStartMarketHour()));
-    	cal.set(Calendar.MINUTE, 0);
-    	cal.set(Calendar.SECOND, 0);
+    	cal.set(Calendar.HOUR_OF_DAY, (int)(props.getMarketOpenedHours() + props.getMktOpenTime()[0]));
+    	cal.set(Calendar.MINUTE, props.getMktOpenTime()[1]);
+    	cal.set(Calendar.SECOND, props.getMktOpenTime()[2]);
     	startTimeStamp = cal.getTime();
 
-    	MarketBar mb = new MarketBar(startTimeStamp.getTime(), 0, 0, 0);
+    	MarketBar mb = new MarketBar(startTimeStamp.getTime(), - props.getBarsIntervalInMinutes() * 60000, 0, 0);
     	mb.setClose(props.getStartPrice());
     	mb.setOpen(props.getStartPrice());
     	

@@ -44,6 +44,8 @@ public class ApplicationProperties {
 	private double[] barsSize_averageBarSizePercentage;
 	private double[] intradayVolDistrPerc;
 	private double[] intradayVolDistValue;
+	private Double maxIntradayVol;
+	private int[] mktOpenTime = new int[3];
 	
 	private Block[] blocks;
 	private Random rand;
@@ -179,6 +181,8 @@ public class ApplicationProperties {
 	        marketOpenedHours = Double.parseDouble(properties.getProperty(variable).trim());
 	        variable = "considerApproachingEndOfTrend";
 	        considerApproachingEndOfTrend = Double.parseDouble(properties.getProperty(variable).trim()) / 100;
+	        variable = "maxIntradayVol";
+	        maxIntradayVol = Double.parseDouble(properties.getProperty(variable).trim()) / 100;
 	        variable = "probabilityToEnterTrend";
 	        probabilityToEnterTrend = Double.parseDouble(properties.getProperty(variable).trim());
 	        variable = "totalNumberOfPeriodsToGenerate";
@@ -187,6 +191,7 @@ public class ApplicationProperties {
 	        startDate = properties.getProperty(variable).trim();
 	        variable = "startTime";
 	        startTime = properties.getProperty(variable).trim();
+
 	        variable = "blocksSequenceRandom";
 	        blocksSequenceRandom = Boolean.parseBoolean(properties.getProperty(variable).trim());
 	        
@@ -301,7 +306,13 @@ public class ApplicationProperties {
     	{
     		log.error("The format for the variable '" + variable + "' is incorrect (" +
     					 properties.getProperty("sessionExpireTime") + ")", e);
-    	}		
+    		System.out.println("The format for the variable '" + variable + "' is incorrect (" +
+					 properties.getProperty("sessionExpireTime") + ")");
+    		System.exit(-1);
+    	}
+        mktOpenTime[0] = Integer.parseInt(startTime.substring(0, 2));
+        mktOpenTime[1] = Integer.parseInt(startTime.substring(3, 5));
+        mktOpenTime[2] = Integer.parseInt(startTime.substring(6, 8));
 	}
 
 	public String getDecimalSeparator() {
@@ -452,5 +463,12 @@ public class ApplicationProperties {
 		return shadowSizeToFollowTrendDirectionAt;
 	}
 
+	public Double getMaxIntradayVol() {
+		return maxIntradayVol;
+	}
+
+	public int[] getMktOpenTime() {
+		return mktOpenTime;
+	}
 	
 }

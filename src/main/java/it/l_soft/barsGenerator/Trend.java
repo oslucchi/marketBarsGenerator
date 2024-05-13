@@ -3,6 +3,9 @@ package it.l_soft.barsGenerator;
 import java.util.ArrayList;
 
 public class Trend implements Cloneable {
+	static final int LONG = 1;
+	static final int LATERAL = 0;
+	static final int SHORT= -1;
 	int id;
 	String name;
 	int direction; // -1 short, 0 lateral, 1 long

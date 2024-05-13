@@ -119,16 +119,6 @@ public class MarketBar {
     	return;
     }
     
-    /*
-    public void populateObject(double open, double priceChange, double volume)
-    {
-    	this.open = open;
-    	this.close = open + priceChange;
-    	this.volume = volume;
-    	setHighAndLow();
-    	return;
-    }
-    */
    
     public long getTimestamp() {
 		return timestamp;
@@ -138,69 +128,64 @@ public class MarketBar {
 		this.timestamp = timestamp;
 	}
 	
+	private double calculateIntradayVol()
+	{
+		double intradayVol = 1;
+		double intradayVolBand = props.getRand().nextDouble();
+		for(int k = 0; k < props.getIntradayVolDistrPerc().length; k++)
+		{
+			if (intradayVolBand <= props.getIntradayVolDistrPerc()[k])
+			{
+				intradayVol = props.getBarsSizeAverageBarSizePercentage()[k];
+				break;
+			}
+		}
+		return intradayVol;
+	}
+
 	public void setTimestampOnCalendar(long lastTimestamp, long msInterval)
 	{
 		startOfDayBar = false;
 		
-        Calendar c1 = Calendar.getInstance();
-        Calendar c2 = Calendar.getInstance();
-        c1.setTime(new Date(lastTimestamp + msInterval));
-        if (c1.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY)
-        {
-            c1.add(Calendar.DAY_OF_YEAR, -1);
-        }
-        else if (c1.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY)
-        {
-            c1.add(Calendar.DAY_OF_YEAR, -2);
-        }
-        
-        c2.set(Calendar.YEAR, c1.get(Calendar.YEAR));
-        c2.set(Calendar.MONTH, c1.get(Calendar.MONTH));
-        c2.set(Calendar.DAY_OF_MONTH, c1.get(Calendar.DAY_OF_MONTH));
-        c2.set(Calendar.HOUR_OF_DAY, props.getStartMarketHour() + ((int) props.getMarketOpenedHours()));
-        c2.set(Calendar.MINUTE, props.getStartMarketMinute());
-        c2.set(Calendar.SECOND, props.getStartMarketSecond() + 1);
-        
-        if (c1.compareTo(c2) >= 0)
-        {
-        	c1.add(Calendar.DAY_OF_YEAR, 1);
-            c1.set(Calendar.HOUR_OF_DAY, props.getStartMarketHour());
-            c1.set(Calendar.MINUTE, props.getStartMarketMinute());
-            c1.set(Calendar.SECOND, props.getStartMarketSecond());
-            startOfDayBar = true;
-        }
-        
-        switch(c1.get(Calendar.DAY_OF_WEEK) )
+		Calendar today = Calendar.getInstance();
+		today.setTime(new Date(lastTimestamp));
+
+		Calendar nextOpen = (Calendar) today.clone();
+		nextOpen.set(Calendar.HOUR_OF_DAY, props.getMktOpenTime()[0]);
+		nextOpen.set(Calendar.MINUTE, props.getMktOpenTime()[1]);
+		nextOpen.set(Calendar.SECOND, props.getMktOpenTime()[2]);
+		
+		Calendar todayClose = (Calendar) nextOpen.clone();
+		nextOpen.add(Calendar.DAY_OF_YEAR, 1);
+
+		todayClose.add(Calendar.HOUR, (int) props.getMarketOpenedHours());
+		todayClose.set(Calendar.MINUTE, (int) (60 * (props.getMarketOpenedHours() - 
+											   (int)props.getMarketOpenedHours())));
+		todayClose.add(Calendar.MINUTE, - props.getBarsIntervalInMinutes()); 
+		
+		today.add(Calendar.MILLISECOND, (int) msInterval);
+		if (today.compareTo(todayClose) > 0)
+		{
+			// after day close, mark it as the next day
+			startOfDayBar = true;
+			// move the timestamp to the open time of the next day
+			today = nextOpen;
+		}
+		
+        switch(today.get(Calendar.DAY_OF_WEEK) )
         {
         case Calendar.SATURDAY:
-        	c1.add(Calendar.DAY_OF_YEAR, 2);
-            c1.set(Calendar.HOUR_OF_DAY, props.getStartMarketHour());
-            c1.set(Calendar.MINUTE, props.getStartMarketMinute());
-            c1.set(Calendar.SECOND, props.getStartMarketSecond());
-            startOfDayBar = true;
-        	break;
+        	today.add(Calendar.DAY_OF_YEAR, 2);
+         	break;
         case Calendar.SUNDAY:
-        	c1.add(Calendar.DAY_OF_YEAR, 1);
-            c1.set(Calendar.HOUR_OF_DAY, props.getStartMarketHour());
-            c1.set(Calendar.MINUTE, props.getStartMarketMinute());
-            c1.set(Calendar.SECOND, props.getStartMarketSecond());
-            startOfDayBar = true;
+        	today.add(Calendar.DAY_OF_YEAR, 1);
         	break;
         }
         
-		this.timestamp = c1.getTimeInMillis();
+		this.timestamp = today.getTimeInMillis();
 		if (startOfDayBar)
 		{
-			// calculate today's intraday max volatility
-			intradayVol = props.getRand().nextDouble();
-			for(int i = 0; i < props.getIntradayVolDistrPerc().length; i++)
-			{
-				if (intradayVol < props.getIntradayVolDistrPerc()[i])
-				{
-					intradayVol = props.getIntradayVolDistValue()[i];
-					break;
-				}
-			}
+			intradayVol = calculateIntradayVol();
 		}
 	}
 
