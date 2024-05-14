@@ -22,6 +22,9 @@ public class Trend implements Cloneable {
 	double targetPrice;
 	double lower;
 	double higher;
+	double lateralBounceAtDeltaPoints;
+	double barSizeAmplifier;
+	double shadowSizeAmplifier;
 	long timestampStart;
 	long timestampEnd;
 	ArrayList<InnerTrend> innerTrends = new ArrayList<>();

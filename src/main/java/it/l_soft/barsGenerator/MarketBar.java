@@ -36,7 +36,7 @@ public class MarketBar {
         }
     }
     
-    public void setHighAndLow(int i)
+    public void setHighAndLow(int i, double shadowSizeAmplifier)
     {
 		// Magnitude of the current bar
     	double barBodySize = Math.abs(close - open);
@@ -51,7 +51,7 @@ public class MarketBar {
 			{
 				if (shadowSizeBand <= props.getShadowSizeNumOfBarsPercentage()[k])
 				{
-					shadowSize[j] = props.getShadowSizeAverageBarSizePercentage()[k] / 2;
+					shadowSize[j] = props.getShadowSizeAverageBarSizePercentage()[k] * shadowSizeAmplifier;
 					break;
 				}
 			}
@@ -136,7 +136,7 @@ public class MarketBar {
 		{
 			if (intradayVolBand <= props.getIntradayVolDistrPerc()[k])
 			{
-				intradayVol = props.getBarsSizeAverageBarSizePercentage()[k];
+				intradayVol = props.getIntradayVolDistValue(k);
 				break;
 			}
 		}

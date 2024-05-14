@@ -31,7 +31,8 @@ public class BarsGenerator {
 
     	System.out.println("Simulation startin on date: " + props.getStartDate());
     	System.out.println("Writing results in: " + System.getProperty("user.dir"));
-    	
+    	log.debug("\n\n\n------------> Process starts on " + props.getStartDate() + 
+    			  " <------------");
     	Date startTimeStamp = sdf.parse(props.getStartDate() + " " + props.getStartTime());
     	Calendar cal = Calendar.getInstance();
     	cal.setTime(startTimeStamp);

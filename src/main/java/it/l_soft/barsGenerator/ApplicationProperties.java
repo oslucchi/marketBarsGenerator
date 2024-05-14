@@ -283,6 +283,39 @@ public class ApplicationProperties {
 			        variable = "B" + i + ".T" + y +".deltaPoints";
 			        trend.deltaPoints = Integer.parseInt(properties.getProperty(variable).trim()) * 
 			        									 (trend.direction != 0 ? trend.direction : 1);
+			        variable = "B" + i + ".T" + y + ".lateralBounceAtDeltaPoints";
+			        try {
+				        trend.lateralBounceAtDeltaPoints = Integer.parseInt(properties.getProperty(variable).trim());
+			        }
+			        catch(Exception e)
+			        {
+			        	if (trend.direction == 0)
+		        		{
+			        		trend.lateralBounceAtDeltaPoints = startPrice * .03;
+		        		}
+			        	else
+		        		{
+			        		trend.lateralBounceAtDeltaPoints = 0;
+		        		}
+			        }
+			        
+			        variable = "B" + i + ".T" + y + ".barSizeAmplifier";
+			        try {
+				        trend.barSizeAmplifier = Double.parseDouble(properties.getProperty(variable).trim());
+			        }
+			        catch(Exception e)
+			        {
+			        	trend.barSizeAmplifier = 1;
+			        }
+			        
+			        variable = "B" + i + ".T" + y + ".shadowSizeAmplifier";
+			        try {
+				        trend.shadowSizeAmplifier = Double.parseDouble(properties.getProperty(variable).trim());
+			        }
+			        catch(Exception e)
+			        {
+			        	trend.shadowSizeAmplifier = 1;
+			        }
 			        
 			        variable = "B" + i + ".T" + y +".capIntradayVol";
 			        trend.capIntradayVol = Boolean.parseBoolean(properties.getProperty(variable).trim());
@@ -375,6 +408,14 @@ public class ApplicationProperties {
 		return barsSize_averageBarSizePercentage;
 	}
 
+	public double getBarsSizeNumOfBarsPercentage(int index) {
+		return barsSize_numOfBarsPercentage[index];
+	}
+
+	public double getBarsSizeAverageBarSizePercentage(int index) {
+		return barsSize_averageBarSizePercentage[index];
+	}
+
 	public Block getBlock(int index) {
 		return blocks[index];
 	}
@@ -393,6 +434,14 @@ public class ApplicationProperties {
 
 	public double[] getShadowSizeAverageBarSizePercentage() {
 		return shadowSize_averageBarSizePercentage;
+	}
+
+	public double getShadowSizeNumOfBarsPercentage(int index) {
+		return shadowSize_numOfBarsPercentage[index];
+	}
+
+	public double getShadowSizeAverageBarSizePercentage(int index) {
+		return shadowSize_averageBarSizePercentage[index];
 	}
 
 	public double getConsiderApproachingEndOfTrend() {
