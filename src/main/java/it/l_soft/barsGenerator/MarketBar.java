@@ -56,19 +56,19 @@ public class MarketBar {
 				}
 			}
 		}
-
-		if (barBodySize / close < .00015)
-		{
-			barBodySize *= 6;
-		}
-		else if (barBodySize / close < .0003)
-		{
-			barBodySize *= 3;
-		}
-		else if (barBodySize / close < .0006)
-		{
-			barBodySize *= 2;
-		}
+//
+//		if (barBodySize / close < .00015)
+//		{
+//			barBodySize *= 6;
+//		}
+//		else if (barBodySize / close < .0003)
+//		{
+//			barBodySize *= 3;
+//		}
+//		else if (barBodySize / close < .0006)
+//		{
+//			barBodySize *= 2;
+//		}
 
 		shadowSize[LOW] = Math.round((barBodySize * shadowSize[LOW]) / props.getMarketTick()) * 
 				  props.getMarketTick();
@@ -277,7 +277,7 @@ public class MarketBar {
 		this.intradayVol = intradayVol;
 	}
 
-	public boolean getStartOfDayBar() {
+	public boolean isStartOfDayBar() {
 		return startOfDayBar;
 	}
 

@@ -6,13 +6,13 @@ public class Block implements Cloneable {
 	private String name;
 	private int numOfTrends;
 	private Trend[] trends;
-	private double maxIntrabarVol;
+	private double maxBarSize;
 	
-	public Block(int numOfTrends, double maxIntrabarVol, int id)
+	public Block(int numOfTrends, double maxBarSize, int id)
 	{
 		this.id = id;
 		trends = new Trend[numOfTrends + 1];
-		this.maxIntrabarVol = maxIntrabarVol;
+		this.maxBarSize = maxBarSize;
 		this.numOfTrends = numOfTrends;
 	}
 	public Block(int id)
@@ -38,7 +38,7 @@ public class Block implements Cloneable {
 	
 	public double getMaxIntrabarVol()
 	{
-		return maxIntrabarVol;
+		return maxBarSize;
 	}
 
 	public int getNumOfTrends() {

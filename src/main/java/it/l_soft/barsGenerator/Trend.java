@@ -22,6 +22,7 @@ public class Trend implements Cloneable {
 	double targetPrice;
 	double lower;
 	double higher;
+	double maxBarSize;
 	double lateralBounceAtDeltaPoints;
 	double barSizeAmplifier;
 	double shadowSizeAmplifier;

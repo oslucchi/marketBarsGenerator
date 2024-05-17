@@ -31,7 +31,7 @@ public class ApplicationProperties {
 	private double[] shadowSize_numOfBarsPercentage;
 	private double[] shadowSize_averageBarSizePercentage;
 	private double probabilityToEnterTrend;
-	private double considerApproachingEndOfTrend;
+	private int barsToEndOfTrend;
 	private double shadowSizeToFollowTrendDirectionAt;
 	private String startDate;
 	private String startTime;
@@ -179,8 +179,8 @@ public class ApplicationProperties {
 	        initialVolume = Integer.parseInt(properties.getProperty(variable).trim());
 	        variable = "marketOpenedHours";
 	        marketOpenedHours = Double.parseDouble(properties.getProperty(variable).trim());
-	        variable = "considerApproachingEndOfTrend";
-	        considerApproachingEndOfTrend = Double.parseDouble(properties.getProperty(variable).trim()) / 100;
+	        variable = "barsToEndOfTrend";
+	        barsToEndOfTrend = Integer.parseInt(properties.getProperty(variable).trim()) / 100;
 	        variable = "maxIntradayVol";
 	        maxIntradayVol = Double.parseDouble(properties.getProperty(variable).trim()) / 100;
 	        variable = "probabilityToEnterTrend";
@@ -267,9 +267,7 @@ public class ApplicationProperties {
 			{
 		        variable = "B" + i + ".numOfTrendsInBlock";
 		        int iValue = Integer.parseInt(properties.getProperty(variable).trim());
-		        variable = "B" + i + ".maxIntrabarVol";
-		        double dValue = Double.parseDouble(properties.getProperty(variable).trim()) / 100.0;
-				blocks[i - 1] = new Block(iValue, dValue, i);
+				blocks[i - 1] = new Block(iValue, 0, i);
 				blocks[i - 1].pushTrend(new Trend(), 0);
 				for(int y = 1; y <= iValue; y++)
 				{
@@ -298,6 +296,8 @@ public class ApplicationProperties {
 			        		trend.lateralBounceAtDeltaPoints = 0;
 		        		}
 			        }
+			        variable = "B" + i + ".T" + y + ".maxBarSize";
+			        trend.maxBarSize = (double) Integer.parseInt(properties.getProperty(variable).trim());
 			        
 			        variable = "B" + i + ".T" + y + ".barSizeAmplifier";
 			        try {
@@ -444,8 +444,8 @@ public class ApplicationProperties {
 		return shadowSize_averageBarSizePercentage[index];
 	}
 
-	public double getConsiderApproachingEndOfTrend() {
-		return considerApproachingEndOfTrend;
+	public int getBarsToEndOfTrend() {
+		return barsToEndOfTrend;
 	}
 
 	public boolean getUseRandomOnBothHighAndLow() {
