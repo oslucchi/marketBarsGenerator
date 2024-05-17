@@ -114,21 +114,10 @@ public class MarketSimulator {
 		
 		if (!trendFollowing)
 		{
-			if (props.getRand().nextDouble() > props.getProbabilityToEnterTrend())
+			if (props.getRand().nextDouble() > 1 - props.getProbabilityToEnterTrend())
 			{
-				switch(trendCur.direction)
-				{
-				case Trend.LONG:
-					directionToGo = -1;
-					break;
-				case Trend.SHORT:
-					directionToGo = 1;
-					break;
-				case Trend.LATERAL:
-					directionToGo = (props.getRand().nextBoolean() ? 1 : - 1);
-					break;
-				}
-				startNewInnerTrend(trendCur.direction);
+				directionToGo = (props.getRand().nextBoolean() ? 1 : - 1);
+				startNewInnerTrend(directionToGo);
 			}
 			else
 			{
@@ -138,7 +127,6 @@ public class MarketSimulator {
 		else
 		{
 			directionToGo = trendCur.innerTrends.get(trendCur.innerTrends.size() - 1).direction;
-;
 			if (--barsFollowingTrend == 0)
 			{
 				closeLastInnerTrend();
