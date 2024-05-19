@@ -19,7 +19,6 @@ public class MarketSimulator {
 	private int directionToGo = 1;
 	private Trend trendCur;
 	private boolean approachingEndOfTrend = false;
-	private boolean endOfTrendDutiesDone = false;
 
 	public MarketSimulator()
 	{
@@ -100,7 +99,10 @@ public class MarketSimulator {
 		if (!approachingEndOfTrend &&
 			(trendCur.currentBar >= trendCur.duration - props.getBarsToEndOfTrend()))
 		{
-			approachingEndOfTrend = true;			
+			// if the number of bars left are less than the considerApproachingEndOfTrend value in %
+			// starts having an eye of regard to the convergency of the trend towards the target point
+			log.debug("Current bar " + trendCur.currentBar + " entering the approachingEnd phase");
+
 			if (trendFollowing)
 			{
 				iTrend = trendCur.innerTrends.get(trendCur.innerTrends.size() - 1);
@@ -110,6 +112,7 @@ public class MarketSimulator {
 				}
 			}
 			startNewInnerTrend(trendCur.direction);
+			approachingEndOfTrend = true;			
 		}
 		
 		if (!trendFollowing)
@@ -210,7 +213,6 @@ public class MarketSimulator {
 									  props.getBarsIntervalInMinutes() * 60000;
 			trendCur.currentBar = 0;
 			approachingEndOfTrend = false;
-			endOfTrendDutiesDone = false;
 
 			log.debug("****** NEW TRAND STARTING (trend Id " + trendCur.id + "). Traget price is " +
 					  trendCur.targetPrice);
@@ -221,13 +223,6 @@ public class MarketSimulator {
 				trendCur.targetPrice = trendCur.openPrice + 
 									   trendCur.deltaPoints / trendCur.duration * (i + 1);
 				
-				if ((i > trendCur.duration - props.getBarsToEndOfTrend()) && (!endOfTrendDutiesDone))
-				{
-					// if the number of bars left are less than the considerApproachingEndOfTrend value in %
-					// starts having an eye of regard to the convergency of the trend towards the target point
-					approachingEndOfTrend = true;
-					log.debug("Current bar " + i + " entering the approachingEnd phase");
-				}
 				trendCur.currentBar++;
 
 				// Create the new bar to be calculated
