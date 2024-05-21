@@ -15,9 +15,10 @@ import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 
 public class BarsGenerator {
 	static final Logger log = Logger.getLogger(BarsGenerator.class);
-	
+
 	public static void main(String[] args) throws ParseException, IOException, InvalidFormatException, CloneNotSupportedException {
 		ApplicationProperties props;
+
 		if ((args.length > 0) && (args[0].compareTo("-f") == 0))
 		{
 			props = ApplicationProperties.getInstance(args[1]);
@@ -49,12 +50,11 @@ public class BarsGenerator {
         List<MarketBar> allBars = new ArrayList<>();
         List<Block> period = new ArrayList<>();
         allBars.add(mb);
-        for(int i = 0; i < props.getTotalNumberOfPeriodsToGenerate(); i++)
+        int i = 0;
+        for(i = 0; i < props.getTotalNumberOfPeriodsToGenerate(); i++)
         {
 			Block blockToRun;
-			int blockId;
-			blockId = props.getBlocksSequence()[i] - 1;
-			blockToRun = props.getBlock(blockId).clone();
+			blockToRun = props.getBlock(props.getBlocksSequence()[i]).clone();
 	        List<MarketBar> bars = simulator.blockHandler(blockToRun, mb.getOpen(), mb.getClose(), mb.getTimestamp());
 	        period.add(blockToRun);        
 	        allBars.addAll(bars);
@@ -78,7 +78,7 @@ public class BarsGenerator {
 	    for(Block block: period)
 	    {
 	    	log.debug("\n\nBlock " + pCount++ + " -- used blckId: " + block.getId());
-	    	for(int i = 1; i < block.getTrends().length; i++)
+	    	for(i = 1; i < block.getTrends().length; i++)
 	    	{
 	    		Trend trend = block.getTrend(i);
 		    	log.debug(

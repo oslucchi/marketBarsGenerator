@@ -211,25 +211,6 @@ public class ApplicationProperties {
 				shadowSize_averageBarSizePercentage[i] = Double.parseDouble(values[i].trim()) / 100;
 			}
 
-			variable = "blocksSequence";
-			values = properties.getProperty(variable).split(",");
-			blocksSequence = new int[blocksSequenceRandom ? totalNumberOfPeriodsToGenerate : values.length];
-			for(int i = 0; i < values.length; i++)
-			{
-				blocksSequence[i] = Integer.parseInt(values[i].trim());
-			}
-			if (blocksSequenceRandom)
-			{
-				for(int i = values.length; i < totalNumberOfPeriodsToGenerate; i++)
-				{
-					blocksSequence[i] = rand.nextInt(numOfBlocks) + 1;
-				}
-			}
-			else
-			{
-				totalNumberOfPeriodsToGenerate = values.length;
-			}
-
 			variable = "barsSize_numOfBarsPercentage";
 			values = properties.getProperty("barsSize.numOfBarsPercentage").split(",");
 			barsSize_numOfBarsPercentage = new double[values.length];
@@ -331,9 +312,40 @@ public class ApplicationProperties {
 			        
 			        blocks[i - 1].pushTrend(trend, y);
 				}
-				
 			}
 			
+			variable = "blocksSequence";
+			values = properties.getProperty(variable).split(",");
+			blocksSequence = new int[blocksSequenceRandom ? totalNumberOfPeriodsToGenerate : values.length];
+			for(int i = 0; i < values.length; i++)
+			{
+				blocksSequence[i] = Integer.parseInt(values[i].trim());
+			}
+			if (blocksSequenceRandom)
+			{
+				for(int i = values.length; i < totalNumberOfPeriodsToGenerate; i++)
+				{
+					int blockId = 0;		
+					while(true)
+					{
+						blockId = rand.nextInt(numOfBlocks);
+						Trend[] prevBlockTrends = blocks[blocksSequence[i - 1]].getTrends();
+						
+						if ((prevBlockTrends[prevBlockTrends.length - 1].direction == 0) &&
+							(blocks[blockId].getTrends()[1].direction == 0))
+						{
+							continue;
+						}
+						break;
+					}
+					
+					blocksSequence[i] = blockId;
+				}
+			}
+			else
+			{
+				totalNumberOfPeriodsToGenerate = values.length;
+			}
     	}
     	catch(NumberFormatException e)
     	{
