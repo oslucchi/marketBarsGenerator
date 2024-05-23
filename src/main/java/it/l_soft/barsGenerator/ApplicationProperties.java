@@ -46,6 +46,7 @@ public class ApplicationProperties {
 	private double[] intradayVolDistValue;
 	private Double maxIntradayVol;
 	private int[] mktOpenTime = new int[3];
+	private boolean useCurrentBarSizeAsReferenceForShadows;
 	
 	private Block[] blocks;
 	private Random rand;
@@ -358,6 +359,24 @@ public class ApplicationProperties {
         mktOpenTime[0] = Integer.parseInt(startTime.substring(0, 2));
         mktOpenTime[1] = Integer.parseInt(startTime.substring(3, 5));
         mktOpenTime[2] = Integer.parseInt(startTime.substring(6, 8));
+        
+        // optional parameters
+        try {
+	        variable = "useCurrentBarSizeAsReferenceForShadows";
+        	useCurrentBarSizeAsReferenceForShadows = false;
+	        if (properties.getProperty(variable) != null)
+	        {
+		        useCurrentBarSizeAsReferenceForShadows = Boolean.parseBoolean(properties.getProperty(variable).trim());
+	        }
+        }
+        catch(Exception e)
+        {
+    		log.error("The format for the variable '" + variable + "' is incorrect (" +
+					 properties.getProperty("sessionExpireTime") + ")", e);
+			System.out.println("The format for the variable '" + variable + "' is incorrect (" +
+					 properties.getProperty("sessionExpireTime") + ")");
+			System.exit(-1);
+        }
 	}
 
 	public String getDecimalSeparator() {
@@ -530,6 +549,10 @@ public class ApplicationProperties {
 
 	public int[] getMktOpenTime() {
 		return mktOpenTime;
+	}
+
+	public boolean getUseCurrentBarSizeAsReferenceForShadows() {
+		return useCurrentBarSizeAsReferenceForShadows;
 	}
 	
 }

@@ -252,7 +252,7 @@ public class MarketSimulator {
 				priceChange = evaluateRevertDirection(priceChange);
 				
 				currentBar.setClose(previousBar.getClose() + priceChange);
-				currentBar.setHighAndLow(i, trendCur.shadowSizeAmplifier);
+				currentBar.setHighAndLow(i, trendCur);
 				currentBar.setVolume(calculateVolume());
 
 				blockBars.add(currentBar);

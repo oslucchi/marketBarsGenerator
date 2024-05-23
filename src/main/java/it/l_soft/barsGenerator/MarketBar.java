@@ -36,13 +36,24 @@ public class MarketBar {
         }
     }
     
-    public void setHighAndLow(int i, double shadowSizeAmplifier)
+    public void setHighAndLow(int i, Trend trendCur)
     {
 		// Magnitude of the current bar
-    	double barBodySize = Math.abs(close - open);
-
+    	double barBodySize;
+    	if (props.getUseCurrentBarSizeAsReferenceForShadows())
+    	{
+    		barBodySize = Math.abs(close - open);
+    	}
+    	else
+    	{
+    		barBodySize = trendCur.maxBarSize;
+    	}
+    	
 		double[] shadowSize = new double[2];
 		
+		// get the percentage of the barBodySize to use randomly from the distribution
+		// in configuration file.
+		// both LOW and HIGH are taken randomly and eventually used below (see comments down)
 		double shadowSizeBand = props.getRand().nextDouble();
 		for(int j = 0; j < 2; j++)
 		{
@@ -51,41 +62,41 @@ public class MarketBar {
 			{
 				if (shadowSizeBand <= props.getShadowSizeNumOfBarsPercentage()[k])
 				{
-					shadowSize[j] = props.getShadowSizeAverageBarSizePercentage()[k] * shadowSizeAmplifier;
+					shadowSize[j] = props.getShadowSizeAverageBarSizePercentage()[k] * 
+									trendCur.shadowSizeAmplifier;
 					break;
 				}
 			}
 		}
-//
-//		if (barBodySize / close < .00015)
-//		{
-//			barBodySize *= 6;
-//		}
-//		else if (barBodySize / close < .0003)
-//		{
-//			barBodySize *= 3;
-//		}
-//		else if (barBodySize / close < .0006)
-//		{
-//			barBodySize *= 2;
-//		}
 
+		// Calculate the effective vale of the LOW shadow and round it to the tick
 		shadowSize[LOW] = Math.round((barBodySize * shadowSize[LOW]) / props.getMarketTick()) * 
 				  props.getMarketTick();
 		
+		// Calculation of the HIGH
 		if (props.getSameHighAndLowDepth())
 		{
+			// It is required to generate simmetric shadow
 			shadowSize[HIGH] = shadowSize[LOW];
 		}
 		else
 		{
 			if (props.getUseRandomOnBothHighAndLow())
 			{
+				// Both shadows should be random. Use the previously random number
+				// we got from distribution above as we did for the LOW shadow
 				shadowSize[HIGH] = Math.round((barBodySize * shadowSize[HIGH]) / props.getMarketTick()) * 
 								   props.getMarketTick();
 			}
 			else
 			{
+				// Take the size of the LOW shadow as the total size of the shadows, randomly generate
+				// a 'split' point within it and assign one part of it to the LOW and one to the HIGH
+				// following the direction the current bar goes, unless (randomly) we enter the case 
+				// to revert this direction. The probability is ruled by the parameter 
+				// shadowSizeToFollowTrendDirectionAt expressing the probability the shadow are oriented
+				// oppositely from the trade direction
+				
 				double partOfShadowAllocated = props.getRand().nextDouble();
 				double shadowsGreater = (partOfShadowAllocated > 0.5 ? partOfShadowAllocated : 1 - partOfShadowAllocated);
 				int highIdx, lowIdx;
