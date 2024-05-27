@@ -52,6 +52,13 @@ public class ApplicationProperties {
 	private Random rand;
 	private static String propertiesPath = null;
 
+	private boolean publishData;
+	private int port;
+	private String host;
+	private long intraMessagePause;
+
+	
+	
 	public static ApplicationProperties getInstance(String propPath)
 	{
 		if (propPath != null)
@@ -158,7 +165,40 @@ public class ApplicationProperties {
 			{
 				ExcelArchiveFolderPath = null;
 			}
+			try {
+				variable = "publishData";
+				publishData = Boolean.parseBoolean(properties.getProperty(variable).trim());
+			}
+			catch (Exception e)
+			{
+				publishData = false;
+			}
+			try {
+				variable = "port";
+				port = Integer.parseInt(properties.getProperty(variable).trim());
+			}
+			catch (Exception e)
+			{
+				port = 12345;
+			}
+			try {
+				variable = "host";
+				host = properties.getProperty(variable).trim();
+			}
+			catch (Exception e)
+			{
+				host = "localhost";
+			}
+			try {
+				variable = "intraMessagePause";
+				intraMessagePause = Long.parseLong(properties.getProperty(variable).trim());
+			}
+			catch (Exception e)
+			{
+				intraMessagePause = 0;
+			}
 
+			
 			variable = "numOfBlocks";
 			numOfBlocks = Integer.parseInt(properties.getProperty(variable).trim());
 			variable = "barsIntervalInMinutes";
@@ -553,6 +593,22 @@ public class ApplicationProperties {
 
 	public boolean getUseCurrentBarSizeAsReferenceForShadows() {
 		return useCurrentBarSizeAsReferenceForShadows;
+	}
+
+	public boolean getPublishData() {
+		return publishData;
+	}
+
+	public int getPort() {
+		return port;
+	}
+
+	public String getHost() {
+		return host;
+	}
+
+	public long getIntraMessagePause() {
+		return intraMessagePause;
 	}
 	
 }
