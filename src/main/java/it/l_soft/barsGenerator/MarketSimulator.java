@@ -21,7 +21,7 @@ public class MarketSimulator {
 	private int directionToGo = 1;
 	private Trend trendCur;
 	private boolean approachingEndOfTrend = false;
-	private Publisher publisher = new Publisher();
+	public Publisher publisher = new Publisher();
 
 	public MarketSimulator()
 	{
@@ -287,4 +287,10 @@ public class MarketSimulator {
 
 		return blockBars;
 	}
+	
+	public boolean isAnyClientConnected()
+	{
+		return (publisher.clientList.size() > 0 ? true : false);
+	}
+
 }

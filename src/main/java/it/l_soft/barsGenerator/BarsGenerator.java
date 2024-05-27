@@ -51,7 +51,24 @@ public class BarsGenerator {
         List<Block> period = new ArrayList<>();
         allBars.add(mb);
         int i = 0;
-        for(i = 0; i < props.getTotalNumberOfPeriodsToGenerate(); i++)
+        if (props.getPublishData())
+        {
+        	System.out.println("Wating for a client to connect...");
+        	// wait for at least 1 client to be connected
+        	while(!simulator.isAnyClientConnected())
+        	{
+        		try {
+					Thread.sleep(1000);
+				} 
+        		catch (InterruptedException e) {
+        			System.out.println("Wait for clients to connect aborted. Quitting the execution");
+        			System.exit(0);
+        		}
+        	}
+        	System.out.println("Client connected, let's go!");
+        }
+
+    	for(i = 0; i < props.getTotalNumberOfPeriodsToGenerate(); i++)
         {
 			Block blockToRun;
 			blockToRun = props.getBlock(props.getBlocksSequence()[i]).clone();

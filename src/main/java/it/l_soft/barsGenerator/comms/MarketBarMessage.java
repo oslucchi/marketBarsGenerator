@@ -4,9 +4,9 @@ import java.io.Serializable;
 
 import org.apache.log4j.Logger;
 
-class MarketBarMessage implements Serializable {
+public class MarketBarMessage implements Serializable {
     private static final long serialVersionUID = 1L;
-	final Logger log = Logger.getLogger(this.getClass());
+    transient Logger log = Logger.getLogger(this.getClass());
     private long timestamp;
     private double open, high, low, close, volume;
 

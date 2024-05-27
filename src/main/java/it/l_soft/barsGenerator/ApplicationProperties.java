@@ -165,40 +165,7 @@ public class ApplicationProperties {
 			{
 				ExcelArchiveFolderPath = null;
 			}
-			try {
-				variable = "publishData";
-				publishData = Boolean.parseBoolean(properties.getProperty(variable).trim());
-			}
-			catch (Exception e)
-			{
-				publishData = false;
-			}
-			try {
-				variable = "port";
-				port = Integer.parseInt(properties.getProperty(variable).trim());
-			}
-			catch (Exception e)
-			{
-				port = 12345;
-			}
-			try {
-				variable = "host";
-				host = properties.getProperty(variable).trim();
-			}
-			catch (Exception e)
-			{
-				host = "localhost";
-			}
-			try {
-				variable = "intraMessagePause";
-				intraMessagePause = Long.parseLong(properties.getProperty(variable).trim());
-			}
-			catch (Exception e)
-			{
-				intraMessagePause = 0;
-			}
-
-			
+					
 			variable = "numOfBlocks";
 			numOfBlocks = Integer.parseInt(properties.getProperty(variable).trim());
 			variable = "barsIntervalInMinutes";
@@ -407,6 +374,34 @@ public class ApplicationProperties {
 	        if (properties.getProperty(variable) != null)
 	        {
 		        useCurrentBarSizeAsReferenceForShadows = Boolean.parseBoolean(properties.getProperty(variable).trim());
+	        }
+
+			variable = "publishData";
+			publishData = false;
+	        if (properties.getProperty(variable) != null)
+	        {
+	        	publishData = Boolean.parseBoolean(properties.getProperty(variable).trim());
+	        }		
+
+			variable = "port";
+			port = 12345;
+	        if (properties.getProperty(variable) != null)
+	        {
+	        	port = Integer.parseInt(properties.getProperty(variable).trim());
+	        }
+
+			variable = "host";
+			host = "";
+	        if (properties.getProperty(variable) != null)
+	        {
+	        	host = properties.getProperty(variable).trim();
+	        }
+
+			variable = "intraMessagePause";
+			intraMessagePause = 1000;
+	        if (properties.getProperty(variable) != null)
+	        {
+	        	intraMessagePause = Long.parseLong(properties.getProperty(variable).trim());
 	        }
         }
         catch(Exception e)

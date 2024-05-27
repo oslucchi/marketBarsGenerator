@@ -3,6 +3,8 @@ package it.l_soft.barsGenerator.comms;
 import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.Iterator;
 
 import org.apache.log4j.Logger;
 
@@ -12,48 +14,59 @@ import it.l_soft.barsGenerator.MarketBar;
 public class Publisher extends Thread {
 	final Logger log = Logger.getLogger(this.getClass());
 	ApplicationProperties props;
-	ArrayList<ClientHandler> clientList = new ArrayList<ClientHandler>();
-
+	public ArrayList<ClientHandler> clientList = new ArrayList<ClientHandler>();
+	
 	private void shutdownClient(ClientHandler client, Exception e)
 	{
-		log.error("Error sending a bar", e);
+		if (e != null)
+		{
+			log.error("Error sending a bar", e);
+		}
+		else
+		{
+			log.error("Error sending a bar");
+		}
 		log.trace("Closing client socket and removing it from active list");
 		client.closeConnection();
-		clientList.remove(client);
 	}
 
 	public void sendBar(MarketBar mb)
 	{
 		MarketBarMessage msg = new MarketBarMessage(mb.getTimestamp(), mb.getOpen(), mb.getHigh(), 
 													mb.getLow(), mb.getClose(), mb.getVolume());
-		for(ClientHandler client : clientList)
-		{
+		
+	    for (Iterator<ClientHandler> it = clientList.iterator(); it.hasNext(); )
+	    {
+	    	ClientHandler client = it.next();
 			try {
 				client.sendMessage("B", msg);
 			} 
 			catch (IOException e) {
 				shutdownClient(client, e);
+				it.remove();
 			}
 		}
 	}
 	
 	public void sendTrade()
 	{
-		TradeMessage msg = new TradeMessage("A", 0, 0);
-		for(ClientHandler client : clientList)
-		{
+		TradeMessage msg = new TradeMessage(new Date().getTime(), "A", 0, 0);
+	    for (Iterator<ClientHandler> it = clientList.iterator(); it.hasNext(); )
+	    {
+	    	ClientHandler client = it.next();
 			try {
-				client.sendMessage("T", msg);
+				client.sendMessage("A", msg);
 			} 
 			catch (IOException e) {
 				shutdownClient(client, e);
+				it.remove();
 			}
 		}
-
 	}
 	
     public void run() {
-        int port = props.getPort();
+		props = ApplicationProperties.getInstance();
+		int port = props.getPort();
         try (ServerSocket serverSocket = new ServerSocket(port)) {
             System.out.println("Server is listening on port " + port);
             while (true) {
@@ -66,9 +79,11 @@ public class Publisher extends Thread {
             System.out.println("Server exception: " + ex.getMessage());
             ex.printStackTrace();
             log.error("Server exception", ex);
-    		for(ClientHandler client : clientList)
-    		{
-    			shutdownClient(client, ex);
+    	    for (Iterator<ClientHandler> it = clientList.iterator(); it.hasNext(); )
+    	    {
+    	    	ClientHandler client = it.next();
+				shutdownClient(client, null);
+    				it.remove();
     		}
         }
     }
