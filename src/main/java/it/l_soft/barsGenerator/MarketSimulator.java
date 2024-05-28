@@ -26,7 +26,7 @@ public class MarketSimulator {
 	public MarketSimulator()
 	{
 		props = ApplicationProperties.getInstance();
-		publisher.start();
+		if (props.getPublishData()) publisher.start();
 		barsFollowingTrend = 0;
 	}
 

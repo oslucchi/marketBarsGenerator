@@ -3,6 +3,7 @@ package it.l_soft.barsGenerator;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.lang.Thread.State;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -80,6 +81,26 @@ public class BarsGenerator {
         }
         allBars.remove(0);
         
+		if (props.getPublishData())
+		{
+			log.trace("The server was running in publishing mode. End of duties.");
+			simulator.publisher.interrupt();
+			int count = 0;
+			log.trace("Waiting for publisher to terminate");
+			while((simulator.publisher.getState() != State.TERMINATED) && (count < 10))
+			{
+				try {
+					Thread.sleep(1000);
+					count++;
+				}
+				catch (InterruptedException e) {
+					;
+				}
+				log.trace("*");
+			}
+			System.exit(0);
+		}
+
         String pathToSave = 
         		(props.getCSVArchiveFolderPath() != null ? 
         				props.getCSVArchiveFolderPath()  + File.separator : 

@@ -65,14 +65,38 @@ public class Publisher extends Thread {
 	}
 	
     public void run() {
-		props = ApplicationProperties.getInstance();
+ 		props = ApplicationProperties.getInstance();
 		int port = props.getPort();
         try (ServerSocket serverSocket = new ServerSocket(port)) {
             System.out.println("Server is listening on port " + port);
             while (true) {
-            	ClientHandler client = new ClientHandler(serverSocket.accept());
-                clientList.add(client);
-                client.start();
+            	serverSocket.setSoTimeout(1000);
+            	ClientHandler client = null;
+            	boolean interrupted = false;
+            	try {
+            		client = new ClientHandler(serverSocket.accept());
+            	}
+            	catch(SocketTimeoutException e)
+            	{
+            		interrupted = true;
+            	}
+            	catch(Exception e)
+            	{
+            		throw e;
+            	}
+            	if (Thread.currentThread().isInterrupted())
+            	{
+            		for(ClientHandler item : clientList)
+            		{
+            			item.closeConnection();
+            		}
+            		break;
+            	}
+            	if (!interrupted)
+            	{
+                    clientList.add(client);
+                    client.start();
+            	}
             }
         } 
         catch (IOException ex) {
