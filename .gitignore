@@ -2,3 +2,4 @@
 /output/excel/
 /output/
 !/output/statistics.xlsm
+/logs/
