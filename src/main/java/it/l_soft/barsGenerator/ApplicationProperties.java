@@ -193,8 +193,6 @@ public class ApplicationProperties {
 	        maxIntradayVol = Double.parseDouble(properties.getProperty(variable).trim()) / 100;
 	        variable = "probabilityToEnterTrend";
 	        probabilityToEnterTrend = Double.parseDouble(properties.getProperty(variable).trim());
-	        variable = "totalNumberOfPeriodsToGenerate";
-	        totalNumberOfPeriodsToGenerate = Integer.parseInt(properties.getProperty(variable).trim());
 	        variable = "startDate";
 	        startDate = properties.getProperty(variable).trim();
 	        variable = "startTime";
@@ -202,6 +200,8 @@ public class ApplicationProperties {
 
 	        variable = "blocksSequenceRandom";
 	        blocksSequenceRandom = Boolean.parseBoolean(properties.getProperty(variable).trim());
+	        variable = "totalNumberOfPeriodsToGenerate";
+	        totalNumberOfPeriodsToGenerate = Integer.parseInt(properties.getProperty(variable).trim());
 	        
 	        variable = "shadowSize.numOfBarsPercentage";
 			values = properties.getProperty(variable).split(",");
@@ -324,7 +324,11 @@ public class ApplicationProperties {
 			
 			variable = "blocksSequence";
 			values = properties.getProperty(variable).split(",");
-			blocksSequence = new int[blocksSequenceRandom ? totalNumberOfPeriodsToGenerate : values.length];
+			if (! blocksSequenceRandom)
+			{
+				totalNumberOfPeriodsToGenerate = values.length;
+			}
+			blocksSequence = new int[totalNumberOfPeriodsToGenerate];
 			for(int i = 0; i < values.length; i++)
 			{
 				blocksSequence[i] = Integer.parseInt(values[i].trim());

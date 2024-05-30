@@ -72,7 +72,7 @@ public class BarsGenerator {
     	for(i = 0; i < props.getTotalNumberOfPeriodsToGenerate(); i++)
         {
 			Block blockToRun;
-			blockToRun = props.getBlock(props.getBlocksSequence()[i]).clone();
+			blockToRun = props.getBlock(props.getBlocksSequence()[i] - 1).clone();
 	        List<MarketBar> bars = simulator.blockHandler(blockToRun, mb.getOpen(), mb.getClose(), mb.getTimestamp());
 	        period.add(blockToRun);        
 	        allBars.addAll(bars);
