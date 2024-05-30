@@ -174,7 +174,8 @@ public class MarketSimulator {
         return props.getInitialVolume() + volumeChange * props.getInitialVolume();
 	}
 	
-	public List<MarketBar> blockHandler(Block block, double openPrice, double closePrice, long timestamp)
+	public List<MarketBar> blockHandler(Block block, double openPrice, double closePrice, 
+										long timestamp, int barsLeft)
 	{
 		List<MarketBar> blockBars = new ArrayList<MarketBar>();
 		Trend trendPrev = block.getTrend(0);
@@ -218,7 +219,7 @@ public class MarketSimulator {
 					  trendCur.targetPrice);
 			
 			// iterate on calculating bars for the duration of the trend
-			for(int i = 0; i < trendCur.duration; i++)
+			for(int i = 0; i < (barsLeft > trendCur.duration ? trendCur.duration : barsLeft); i++)
 			{
 				trendCur.targetPrice = trendCur.openPrice + 
 									   trendCur.deltaPoints / trendCur.duration * (i + 1);
@@ -269,6 +270,15 @@ public class MarketSimulator {
 			trendFollowing = false;
 			log.debug("****** TRAND Id " + trendCur.id + 
 					  " is over. CLosed at price " + trendCur.closePrice + "\n\n");
+			if (barsLeft > trendCur.duration)
+			{
+				barsLeft -= trendCur.duration;
+			}
+			else
+			{
+				log.trace("total bars to generate reached. aborting execution");
+				break;
+			}
 		}
 
 		return blockBars;

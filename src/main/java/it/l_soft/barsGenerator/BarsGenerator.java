@@ -50,16 +50,23 @@ public class BarsGenerator {
         List<MarketBar> allBars = new ArrayList<>();
         List<Block> period = new ArrayList<>();
         allBars.add(mb);
+        int barsLeftToGenerate = props.getMaxBarToGenerate();
         int i = 0;
         for(i = 0; i < props.getTotalNumberOfPeriodsToGenerate(); i++)
         {
 			Block blockToRun;
 			blockToRun = props.getBlock(props.getBlocksSequence()[i]).clone();
-	        List<MarketBar> bars = simulator.blockHandler(blockToRun, mb.getOpen(), mb.getClose(), mb.getTimestamp());
+	        List<MarketBar> bars = simulator.blockHandler(blockToRun, mb.getOpen(), mb.getClose(), 
+	        											  mb.getTimestamp(), barsLeftToGenerate);
 	        period.add(blockToRun);        
 	        allBars.addAll(bars);
 	        
 	        mb = bars.get(bars.size() - 1);
+	        if ((barsLeftToGenerate -= bars.size()) <= 0)
+	        {
+				log.trace("Rquired number of bars generated. Output on files");
+	        	break;
+	        }
         }
         allBars.remove(0);
         
@@ -92,7 +99,7 @@ public class BarsGenerator {
 		    	log.debug(String.format("%-14.14s %10.8s %10.8s %10.8s %10.8s %10.8s %12.12s %6.6s", 
 		                "Time", "Open", "High", "Low", "Close", "Volume", "Applied Vol", "Trend"));
 		    	log.debug(allBars.get(barIdx));
-		    	for(int y = 0; y < trend.duration; y++)
+		    	for(int y = 0; (y < trend.duration) & (barIdx < allBars.size()); y++)
 		    	{
 		    	    tradiaWriter.println(allBars.get(barIdx++).tradiaOutput());
 		    	}

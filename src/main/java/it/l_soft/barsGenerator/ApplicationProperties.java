@@ -47,6 +47,7 @@ public class ApplicationProperties {
 	private Double maxIntradayVol;
 	private int[] mktOpenTime = new int[3];
 	private boolean useCurrentBarSizeAsReferenceForShadows;
+	private int maxBarToGenerate;
 	
 	private Block[] blocks;
 	private Random rand;
@@ -192,6 +193,8 @@ public class ApplicationProperties {
 	        startDate = properties.getProperty(variable).trim();
 	        variable = "startTime";
 	        startTime = properties.getProperty(variable).trim();
+	        variable = "maxBarToGenerate";
+	        maxBarToGenerate = Integer.parseInt(properties.getProperty(variable).trim());
 
 	        variable = "blocksSequenceRandom";
 	        blocksSequenceRandom = Boolean.parseBoolean(properties.getProperty(variable).trim());
@@ -377,6 +380,10 @@ public class ApplicationProperties {
 					 properties.getProperty("sessionExpireTime") + ")");
 			System.exit(-1);
         }
+	}
+
+	public int getMaxBarToGenerate() {
+		return maxBarToGenerate;
 	}
 
 	public String getDecimalSeparator() {
