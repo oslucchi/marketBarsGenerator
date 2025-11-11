@@ -44,14 +44,16 @@ public class BarsGenerator {
     	cal.set(Calendar.SECOND, props.getMktOpenTime()[2]);
     	startTimeStamp = cal.getTime();
 
-    	MarketBar mb = new MarketBar(startTimeStamp.getTime(), - props.getBarsIntervalInMinutes() * 60000, 0, 0);
+    	Bar mb = new Bar(startTimeStamp.getTime(), - props.getBarsIntervalInMinutes() * 60000, 0, 0);
     	mb.setClose(props.getStartPrice());
     	mb.setOpen(props.getStartPrice());
     	
-        List<MarketBar> allBars = new ArrayList<>();
+        List<Bar> allBars = new ArrayList<>();
         List<Block> period = new ArrayList<>();
         allBars.add(mb);
         int i = 0;
+        System.out.println("Working directory: " + new java.io.File(".").getAbsolutePath());
+
         if (props.getPublishData())
         {
         	System.out.println("Wating for a client to connect...");
@@ -73,7 +75,7 @@ public class BarsGenerator {
         {
 			Block blockToRun;
 			blockToRun = props.getBlock(props.getBlocksSequence()[i] - 1).clone();
-	        List<MarketBar> bars = simulator.blockHandler(blockToRun, mb.getOpen(), mb.getClose(), mb.getTimestamp());
+	        List<Bar> bars = simulator.blockHandler(blockToRun, mb.getOpen(), mb.getClose(), mb.getTimestamp());
 	        period.add(blockToRun);        
 	        allBars.addAll(bars);
 	        

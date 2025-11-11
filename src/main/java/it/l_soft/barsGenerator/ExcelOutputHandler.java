@@ -60,12 +60,12 @@ public class ExcelOutputHandler {
         return row;
 	}
 	
-	public void writeDataRows(List<MarketBar> allBars)
+	public void writeDataRows(List<Bar> allBars)
 	{
 		rowIdx = 0;
 	    sheet = wb.getSheet("bars");
 
-	    for(MarketBar mt : allBars)
+	    for(Bar mt : allBars)
 	    {
 	    	int colIdx = 0;
 	    	row = getRow(rowIdx++);

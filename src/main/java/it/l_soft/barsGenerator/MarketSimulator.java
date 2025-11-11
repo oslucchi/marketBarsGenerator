@@ -13,7 +13,7 @@ public class MarketSimulator {
 	final int HIGH = 1;
 
 	private ApplicationProperties props;
-	private MarketBar previousBar, currentBar;
+	private Bar previousBar, currentBar;
 	
 	private boolean trendFollowing = false;
 	private int innerTrendSign = 0;
@@ -172,20 +172,20 @@ public class MarketSimulator {
 	}
 	
 	
-	private double calculateVolume()
+	private long calculateVolume()
 	{
-		double volumeChange = (props.getRand().nextDouble() - .5) * 2;
+		long volumeChange = (long) (props.getRand().nextDouble() - .5) * 2;
         return props.getInitialVolume() + volumeChange * props.getInitialVolume();
 	}
 	
-	public List<MarketBar> blockHandler(Block block, double openPrice, double closePrice, long timestamp)
+	public List<Bar> blockHandler(Block block, double openPrice, double closePrice, long timestamp)
 	{
-		List<MarketBar> blockBars = new ArrayList<MarketBar>();
+		List<Bar> blockBars = new ArrayList<Bar>();
 		Trend trendPrev = block.getTrend(0);
 		trendPrev.closePrice = openPrice;
 		trendPrev.timestampEnd = timestamp;
 		
-		previousBar = new MarketBar(trendPrev.timestampEnd, 0, 0, 0); // the simulated previous mkt bar
+		previousBar = new Bar(trendPrev.timestampEnd, 0, 0, 0); // the simulated previous mkt bar
 		previousBar.setClose(closePrice);
 		previousBar.setOpen(openPrice);
 		log.debug("=> HANDLING BLOCK Id " + block.getId());
@@ -230,7 +230,7 @@ public class MarketSimulator {
 				trendCur.currentBar++;
 
 				// Create the new bar to be calculated
-				currentBar = new MarketBar(previousBar.getTimestamp(), props.getBarsIntervalInMinutes() * 60000, 0, 0);
+				currentBar = new Bar(previousBar.getTimestamp(), props.getBarsIntervalInMinutes() * 60000, 0, 0);
 
 				if (currentBar.isStartOfDayBar())
 				{
@@ -262,6 +262,7 @@ public class MarketSimulator {
 				blockBars.add(currentBar);
 				if (props.getPublishData())
 				{
+					
 					publisher.sendBar(currentBar);
 					try {
 						Thread.sleep(props.getIntraMessagePause());

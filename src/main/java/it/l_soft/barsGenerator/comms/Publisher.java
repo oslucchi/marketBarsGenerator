@@ -9,7 +9,7 @@ import java.util.Iterator;
 import org.apache.log4j.Logger;
 
 import it.l_soft.barsGenerator.ApplicationProperties;
-import it.l_soft.barsGenerator.MarketBar;
+import it.l_soft.barsGenerator.Bar;
 
 public class Publisher extends Thread {
 	final Logger log = Logger.getLogger(this.getClass());
@@ -30,22 +30,30 @@ public class Publisher extends Thread {
 		client.closeConnection();
 	}
 
-	public void sendBar(MarketBar mb)
+	public void sendBar(Bar mb)
 	{
-		MarketBarMessage msg = new MarketBarMessage(mb.getTimestamp(), mb.getOpen(), mb.getHigh(), 
+		MarketBar msg = new MarketBar(mb.getTimestamp(), mb.getOpen(), mb.getHigh(), 
 													mb.getLow(), mb.getClose(), mb.getVolume());
 		
 	    for (Iterator<ClientHandler> it = clientList.iterator(); it.hasNext(); )
 	    {
 	    	ClientHandler client = it.next();
 			try {
-				client.sendMessage("B", msg);
+				client.sendMessage(msg);
 			} 
 			catch (IOException e) {
 				shutdownClient(client, e);
 				it.remove();
 			}
 		}
+		try {
+			Thread.sleep(250);
+		}
+		catch(Exception e)
+		{
+			;
+		}
+
 	}
 	
 	public void sendTrade()
@@ -55,13 +63,21 @@ public class Publisher extends Thread {
 	    {
 	    	ClientHandler client = it.next();
 			try {
-				client.sendMessage("A", msg);
+				client.sendMessage(msg);
 			} 
 			catch (IOException e) {
 				shutdownClient(client, e);
 				it.remove();
 			}
 		}
+		try {
+			Thread.sleep(250);
+		}
+		catch(Exception e)
+		{
+			;
+		}
+
 	}
 	
     public void run() {

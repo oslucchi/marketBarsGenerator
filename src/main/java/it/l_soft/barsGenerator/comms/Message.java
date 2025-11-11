@@ -1,22 +1,27 @@
 package it.l_soft.barsGenerator.comms;
 
-import java.io.Serializable;
-
-public class Message implements Serializable {
-    private static final long serialVersionUID = 1L;
-    private String topic;
-    private Object data;
-
-    public Message(String topic, Object data) {
+public class Message {
+    protected String topic;
+    protected long timestamp;
+    
+    public Message(String topic) {
         this.topic = topic;
-        this.data = data;
     }
 
     public String getTopic() {
         return topic;
     }
 
-    public Object getData() {
-        return data;
+    public long getTimestamp() {
+    	return timestamp;
     }
+    
+	public void setTopic(String topic) {
+		this.topic = topic;
+	}
+
+	public void setTimestamp(long timestamp) {
+		this.timestamp = timestamp;
+	}
+
 }

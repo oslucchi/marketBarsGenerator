@@ -5,7 +5,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 
-public class MarketBar {
+public class Bar {
 	final int LOW = 0;
 	final int HIGH = 1;
 
@@ -15,7 +15,7 @@ public class MarketBar {
 	private double close;
 	private double high;
 	private double low;
-	private double volume;
+	private long volume;
 	private double interest;
 	private double intrabarVol;
 	private double intradayVol;
@@ -24,7 +24,7 @@ public class MarketBar {
 	private long marketOpenHours;
 	private boolean startOfDayBar;
 
-    public MarketBar(long lastTimestamp, long msInterval, double intrabarVol, int trendFollowing) 
+    public Bar(long lastTimestamp, long msInterval, double intrabarVol, int trendFollowing) 
     {
     	setTimestampOnCalendar(lastTimestamp, msInterval);
         this.interest = intrabarVol;
@@ -124,7 +124,7 @@ public class MarketBar {
 		low = reference - shadowSize[LOW];
     }
     
-    public MarketBar(long lastTimestamp, long msInterval) 
+    public Bar(long lastTimestamp, long msInterval) 
     {
     	setTimestampOnCalendar(lastTimestamp, msInterval);
     	return;
@@ -232,11 +232,11 @@ public class MarketBar {
 		this.low = low;
 	}
 
-	public double getVolume() {
+	public long getVolume() {
 		return volume;
 	}
 
-	public void setVolume(double volume) {
+	public void setVolume(long volume) {
 		this.volume = volume;
 	}
 
