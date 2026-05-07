@@ -56,6 +56,8 @@ public class ApplicationProperties {
 	private int port;
 	private String host;
 	private long intraMessagePause;
+	private int ticksPerBar;
+	private int cumulativePeriodMinutes;
 
 	
 	
@@ -407,6 +409,20 @@ public class ApplicationProperties {
 	        {
 	        	intraMessagePause = Long.parseLong(properties.getProperty(variable).trim());
 	        }
+
+			variable = "ticksPerBar";
+			ticksPerBar = 5;
+	        if (properties.getProperty(variable) != null)
+	        {
+	        	ticksPerBar = Integer.parseInt(properties.getProperty(variable).trim());
+	        }
+
+			variable = "cumulativePeriodMinutes";
+			cumulativePeriodMinutes = barsIntervalInMinutes * 5;
+	        if (properties.getProperty(variable) != null)
+	        {
+	        	cumulativePeriodMinutes = Integer.parseInt(properties.getProperty(variable).trim());
+	        }
         }
         catch(Exception e)
         {
@@ -609,5 +625,14 @@ public class ApplicationProperties {
 	public long getIntraMessagePause() {
 		return intraMessagePause;
 	}
-	
+
+	public int getTicksPerBar() {
+		return ticksPerBar;
+	}
+
+
+
+	public int getCumulativePeriodMinutes() {
+		return cumulativePeriodMinutes;
+	}
 }

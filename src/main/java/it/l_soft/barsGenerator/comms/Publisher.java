@@ -42,20 +42,54 @@ public class Publisher extends Thread {
 				client.sendMessage(msg);
 			} 
 			catch (IOException e) {
+				System.out.println("Exception " + e.getMessage() + " on sendMessage");
+				System.out.println("Client " + client.getName() + " will be shutdown");
 				shutdownClient(client, e);
+				System.out.println("The current ClientHandler is removed from the list");
 				it.remove();
 			}
 		}
-		try {
-			Thread.sleep(250);
-		}
-		catch(Exception e)
-		{
-			;
-		}
-
 	}
-	
+
+	public void sendTickBar(Bar mb)
+	{
+		MarketBar msg = new MarketBar(mb.getTimestamp(), mb.getOpen(), mb.getHigh(),
+													mb.getLow(), mb.getClose(), mb.getVolume());
+		msg.setTopic("T");
+	    for (Iterator<ClientHandler> it = clientList.iterator(); it.hasNext(); )
+	    {
+	    	ClientHandler client = it.next();
+			try {
+				client.sendMessage(msg);
+			} 
+			catch (IOException e) {
+				System.out.println("Exception " + e.getMessage() + " on sendTickBar");
+				System.out.println("Client " + client.getName() + " will be shutdown");
+				shutdownClient(client, e);
+				System.out.println("The current ClientHandler is removed from the list");
+				it.remove();
+			}
+		}
+	}
+
+	public void sendMessageObject(Message msg)
+	{
+	    for (Iterator<ClientHandler> it = clientList.iterator(); it.hasNext(); )
+	    {
+	    	ClientHandler client = it.next();
+			try {
+				client.sendMessage(msg);
+			} 
+			catch (IOException e) {
+				System.out.println("Exception " + e.getMessage() + " on sendMessageObject");
+				System.out.println("Client " + client.getName() + " will be shutdown");
+				shutdownClient(client, e);
+				System.out.println("The current ClientHandler is removed from the list");
+				it.remove();
+			}
+		}
+	}
+
 	public void sendTrade()
 	{
 		TradeMessage msg = new TradeMessage(new Date().getTime(), "A", 0, 0);
@@ -71,7 +105,7 @@ public class Publisher extends Thread {
 			}
 		}
 		try {
-			Thread.sleep(250);
+			Thread.sleep(1000);
 		}
 		catch(Exception e)
 		{
@@ -80,7 +114,33 @@ public class Publisher extends Thread {
 
 	}
 	
-    public void run() {
+
+	public void sendHeader(String sourceFileName)
+	{
+		StreamHeader msg = new StreamHeader(new Date().getTime(), sourceFileName);
+	    for (Iterator<ClientHandler> it = clientList.iterator(); it.hasNext(); )
+	    {
+	    	ClientHandler client = it.next();
+			try {
+				client.sendMessage(msg);
+			} 
+			catch (IOException e) {
+				shutdownClient(client, e);
+				it.remove();
+			}
+		}
+		try {
+			Thread.sleep(1000);
+		}
+		catch(Exception e)
+		{
+			;
+		}
+
+	}
+
+	
+	public void run() {
  		props = ApplicationProperties.getInstance();
 		int port = props.getPort();
         try (ServerSocket serverSocket = new ServerSocket(port)) {

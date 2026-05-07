@@ -5,8 +5,6 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 
-import it.l_soft.barsGenerator.comms.Publisher;
-
 public class MarketSimulator {
 	final Logger log = Logger.getLogger(this.getClass());
 	final int LOW = 0;
@@ -21,12 +19,10 @@ public class MarketSimulator {
 	private int directionToGo = 1;
 	private Trend trendCur;
 	private boolean approachingEndOfTrend = false;
-	public Publisher publisher = new Publisher();
 
 	public MarketSimulator()
 	{
 		props = ApplicationProperties.getInstance();
-		if (props.getPublishData()) publisher.start();
 		barsFollowingTrend = 0;
 	}
 
@@ -178,7 +174,7 @@ public class MarketSimulator {
         return props.getInitialVolume() + volumeChange * props.getInitialVolume();
 	}
 	
-	public List<Bar> blockHandler(Block block, double openPrice, double closePrice, long timestamp)
+			public List<Bar> blockHandler(Block block, double openPrice, double closePrice, long timestamp)
 	{
 		List<Bar> blockBars = new ArrayList<Bar>();
 		Trend trendPrev = block.getTrend(0);
@@ -260,17 +256,6 @@ public class MarketSimulator {
 				currentBar.setVolume(calculateVolume());
 
 				blockBars.add(currentBar);
-				if (props.getPublishData())
-				{
-					
-					publisher.sendBar(currentBar);
-					try {
-						Thread.sleep(props.getIntraMessagePause());
-					} 
-					catch (InterruptedException e) {
-						;
-					}
-				}
 				previousBar = currentBar;
 			}
 			if ((currentBar.getClose() != trendCur.openPrice + trendCur.deltaPoints) &&
@@ -287,11 +272,6 @@ public class MarketSimulator {
 		}
 
 		return blockBars;
-	}
-	
-	public boolean isAnyClientConnected()
-	{
-		return (publisher.clientList.size() > 0 ? true : false);
 	}
 
 }

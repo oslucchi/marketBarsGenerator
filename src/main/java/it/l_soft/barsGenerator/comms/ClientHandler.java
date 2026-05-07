@@ -3,7 +3,6 @@ package it.l_soft.barsGenerator.comms;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
 import org.apache.log4j.Logger;
@@ -22,29 +21,17 @@ class ClientHandler extends Thread {
     public void sendMessage(Object msgObject) throws IOException
     {
     	Message message = (Message) msgObject;
-    	byte[] byteArray;
     	log.trace("sendMessage started");
-    	
-    	byteArray = message.getTopic().getBytes();
-        output.write(byteArray);
-        log.debug("Message: topic " + message.getTopic() + 
-        				   " (byteArray length " + byteArray.length + ")");
-        
-        byteArray = ByteBuffer.allocate(Long.BYTES)
-	                .order(java.nio.ByteOrder.BIG_ENDIAN)
-	                .putLong(message.getTimestamp())
-	                .array();
-        output.write(byteArray);
-        log.debug("Message: timestamp " + ByteBuffer.wrap(byteArray).getLong());
 
-        byte[] json = JSONWrapper.MAPPER.writeValueAsBytes(message); // UTF-8 by default
-        byteArray = ByteBuffer.allocate(4).putInt(json.length).array(); // big-endian
-        log.debug("Message: sending json '" + 
-					new String(json, 0, json.length, StandardCharsets.UTF_8) + "' " +
-					"for length " + ByteBuffer.wrap(byteArray).getInt());
-        output.write(byteArray);
+        byte[] json = JSONWrapper.MAPPER.writeValueAsBytes(message);
+        String jsonStr = new String(json, StandardCharsets.UTF_8);
+        String header = String.format("%05d", json.length);
+        output.write(header.getBytes(StandardCharsets.UTF_8));
         output.write(json);
         output.flush();
+
+        log.debug("Message sent: topic=" + message.getTopic() +
+                  " len=" + json.length + " json=" + jsonStr);
     }
     
     public void closeConnection()

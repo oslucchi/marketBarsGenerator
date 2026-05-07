@@ -316,9 +316,24 @@ public class Bar {
     	Date ts = new Date(timestamp);
         return String.format(Locale.US, "%s,%s,%.2f,%.2f,%.2f,%.2f,%.0f", 
         					 date.format(ts), time.format(ts), open, high, low, close, (volume == 0 ? 1000 : volume))
-							.replace(",", (props.getFieldSeparator() == null ? "," : props.getFieldSeparator()))
-							.replace(".", (props.getDecimalSeparator() == null ? "." : props.getDecimalSeparator()));
+        					.replace(",", (props.getFieldSeparator() == null ? "," : props.getFieldSeparator()))
+        					.replace(".", (props.getDecimalSeparator() == null ? "." : props.getDecimalSeparator()));
     }
-    
-    
+
+    public String bOutput(int barNumber) {
+    	SimpleDateFormat date = new SimpleDateFormat("dd/MM/YYYY");
+    	SimpleDateFormat time = new SimpleDateFormat("HH:mm");
+    	Date ts = new Date(timestamp);
+        return String.format(Locale.US, "B,%s,%s,%.2f,%.2f,%.2f,%.2f,%d,%d", 
+        					 date.format(ts), time.format(ts), open, high, low, close, (volume == 0 ? 1000 : volume), barNumber);
+    }
+
+    public String tOutput(long subTimestamp, double subOpen, double subHigh, double subLow, double subClose, long subVolume, int barNumber) {
+    	SimpleDateFormat date = new SimpleDateFormat("dd/MM/YYYY");
+    	SimpleDateFormat time = new SimpleDateFormat("HH:mm");
+    	Date ts = new Date(subTimestamp);
+        return String.format(Locale.US, "T,%s,%s,%.2f,%.2f,%.2f,%.2f,%d,%d",
+                             date.format(ts), time.format(ts), subOpen, subHigh, subLow, subClose, subVolume, barNumber);
+    }
+
 }
