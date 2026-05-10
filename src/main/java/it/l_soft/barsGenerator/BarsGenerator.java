@@ -78,7 +78,8 @@ public class BarsGenerator {
 				mb = bars.get(bars.size() - 1);
 			}
 			allBars.remove(0);
-		} else {
+		} 
+		else {
 			readBarsFromCSV(allBars, barsSourcePath, howManyBars, props);
 		}
 
@@ -134,7 +135,7 @@ public class BarsGenerator {
 						trend.duration, trend.openPrice, trend.targetPrice, trend.closePrice));
 				log.debug(String.format("%-14.14s %10.8s %10.8s %10.8s %10.8s %10.8s %12.12s %6.6s",
 						"Time", "Open", "High", "Low", "Close", "Volume", "Applied Vol", "Trend"));
-				log.debug(allBars.get(barIdx));
+				log.debug(allBars.get(barIdx).toString());
 				for (int y = 0; y < trend.duration; y++) {
 					Bar bBar = allBars.get(barIdx);
 					// Write T intra-bar ticks before the consolidated bar
@@ -186,7 +187,9 @@ public class BarsGenerator {
 	}
 
 	private static void readBarsFromCSV(List<Bar> allBars, String sourceFilePath, int maxBars,
-			ApplicationProperties props) throws IOException, ParseException {
+										ApplicationProperties props) 
+		throws IOException, ParseException 
+	{
 		SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
 		Random r = new Random();
 		String fieldSep = props.getFieldSeparator() != null ? props.getFieldSeparator() : ";";

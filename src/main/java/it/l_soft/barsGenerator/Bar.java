@@ -295,16 +295,18 @@ public class Bar {
 	@Override
     public String toString() {
     	SimpleDateFormat df = new SimpleDateFormat("yyyy/MM/dd HH:mm");
-        return String.format(Locale.US, "%s %10.2f %10.2f %10.2f %10.2f %10.0f %12.6f %6.6s", 
-        					 df.format(new Date(timestamp)), open, high, low, close, 
-        					 volume, interest, trendFollowing);
-    }
+    	String stringVal = String.format(Locale.US, 
+    									 "%s %10.2f %10.2f %10.2f %10.2f %10d %12.6f %6d",
+    									 df.format(new Date(timestamp)), open, high, low, close,
+    									 volume, interest, trendFollowing);
+        return stringVal;
+	}
 	
     public String csvOutput() {
     	SimpleDateFormat date = new SimpleDateFormat("dd/MM/YYYY");
     	SimpleDateFormat time = new SimpleDateFormat("HH:mm:ss");
     	Date ts = new Date(timestamp);
-        return String.format(Locale.US, "%s %s,%.2f,%.2f,%.2f,%.2f,%.0f,%.5f,%d", 
+        return String.format(Locale.US, "%s %s,%.2f,%.2f,%.2f,%.2f,%d,%.5f,%d", 
         					 date.format(ts), time.format(ts), open, high, low, close, volume, intrabarVol, trendFollowing)
         					.replace(",", (props.getFieldSeparator() == null ? "," : props.getFieldSeparator()))
         					.replace(".", (props.getDecimalSeparator() == null ? "." : props.getDecimalSeparator()));
@@ -314,7 +316,7 @@ public class Bar {
     	SimpleDateFormat date = new SimpleDateFormat("dd/MM/YYYY");
     	SimpleDateFormat time = new SimpleDateFormat("HH:mm:ss");
     	Date ts = new Date(timestamp);
-        return String.format(Locale.US, "%s,%s,%.2f,%.2f,%.2f,%.2f,%.0f", 
+        return String.format(Locale.US, "%s,%s,%.2f,%.2f,%.2f,%.2f,%d", 
         					 date.format(ts), time.format(ts), open, high, low, close, (volume == 0 ? 1000 : volume))
         					.replace(",", (props.getFieldSeparator() == null ? "," : props.getFieldSeparator()))
         					.replace(".", (props.getDecimalSeparator() == null ? "." : props.getDecimalSeparator()));

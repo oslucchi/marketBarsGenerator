@@ -18,7 +18,6 @@ public class BarPublisherService {
 	private double cumClose;
 	private long cumVolume;
 	private long cumTimestamp;
-	private long cumStartTimestamp;
 	private int barsInCumulative;
 	private boolean cumulativeStarted;
 	private int barsPerCumulative;
@@ -40,7 +39,6 @@ public class BarPublisherService {
 		cumClose = 0;
 		cumVolume = 0;
 		cumTimestamp = 0;
-		cumStartTimestamp = 0;
 		barsInCumulative = 0;
 		cumulativeStarted = false;
 	}
@@ -48,7 +46,6 @@ public class BarPublisherService {
 	private void accumulate(Bar bar) {
 		if (!cumulativeStarted) {
 			cumOpen = bar.getOpen();
-			cumStartTimestamp = bar.getTimestamp();
 			cumulativeStarted = true;
 		}
 		if (bar.getHigh() > cumHigh) cumHigh = bar.getHigh();
@@ -59,7 +56,9 @@ public class BarPublisherService {
 		barsInCumulative++;
 	}
 
-	private void sendBCumulative() {
+	private void sendBCumulative() 
+		throws Exception
+	{
 		if (barsInCumulative == 0) return;
 		MarketBar bMsg = new MarketBar(cumTimestamp, cumOpen, cumHigh, cumLow, cumClose, cumVolume);
 		bMsg.setTopic("B");
@@ -71,12 +70,16 @@ public class BarPublisherService {
 	public void publishBar(Bar bar) {
 		MarketBar tMsg = new MarketBar(bar.getTimestamp(), bar.getOpen(), bar.getHigh(), bar.getLow(), bar.getClose(), bar.getVolume());
 		tMsg.setTopic("T");
-		publisher.sendMessageObject(tMsg);
-
-		accumulate(bar);
-
-		if (barsInCumulative >= barsPerCumulative) {
-			sendBCumulative();
+		try {
+			publisher.sendMessageObject(tMsg);
+			accumulate(bar);
+			if (barsInCumulative >= barsPerCumulative) {
+				sendBCumulative();
+			}
+		}
+		catch(Exception e)
+		{
+			log.warn("No more clients connected");
 		}
 	}
 
@@ -90,8 +93,14 @@ public class BarPublisherService {
 				break;
 			}
 		}
-		if (barsInCumulative > 0) {
-			sendBCumulative();
+		try {
+			if (barsInCumulative > 0) {
+				sendBCumulative();
+			}
+		}
+		catch(Exception e)
+		{
+			log.warn("No more clients connected");
 		}
 	}
 }

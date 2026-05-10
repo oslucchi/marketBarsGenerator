@@ -72,7 +72,8 @@ public class Publisher extends Thread {
 		}
 	}
 
-	public void sendMessageObject(Message msg)
+	public void sendMessageObject(Message msg) 
+		throws Exception
 	{
 	    for (Iterator<ClientHandler> it = clientList.iterator(); it.hasNext(); )
 	    {
@@ -88,6 +89,10 @@ public class Publisher extends Thread {
 				it.remove();
 			}
 		}
+	    if (clientList.size() == 0)
+	    {
+	    	throw new Exception("No more clients");
+	    }
 	}
 
 	public void sendTrade()
