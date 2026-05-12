@@ -2,276 +2,143 @@ package it.l_soft.barsGenerator;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import org.apache.log4j.Logger;
+import java.util.Random;
 
 public class MarketSimulator {
-	final Logger log = Logger.getLogger(this.getClass());
-	final int LOW = 0;
-	final int HIGH = 1;
 
-	private ApplicationProperties props;
-	private Bar previousBar, currentBar;
-	
-	private boolean trendFollowing = false;
-	private int innerTrendSign = 0;
-	private int barsFollowingTrend;
-	private int directionToGo = 1;
-	private Trend trendCur;
-	private boolean approachingEndOfTrend = false;
+    private final ApplicationProperties props;
+    private final Random rand;
+    private final double atrShortBase;
+    private final double atrLongBase;
+    private final double smoothness;
+    private final int tBarsPerB;
 
-	public MarketSimulator()
-	{
-		props = ApplicationProperties.getInstance();
-		barsFollowingTrend = 0;
-	}
+    private double atrShortCurrent;
+    private double atrLongCurrent;
+    private double currentPrice;
+    private long currentTimestamp;
+    private int bBarIndex;
 
-	private void closeLastInnerTrend()
-	{
-		InnerTrend iTrend;
-		iTrend = trendCur.innerTrends.get(trendCur.innerTrends.size() - 1);	
-		iTrend.barEnd = trendCur.currentBar - 1;
-		iTrend.numOfBars -= barsFollowingTrend;
-		iTrend.closePrice = previousBar.getClose();
-		trendFollowing = false;
-	}
+    public MarketSimulator(double atrShort, double atrLong, double smoothness, int tBarsPerB) {
+        this.props = ApplicationProperties.getInstance();
+        this.rand = props.getRand();
+        this.atrShortBase = isValidAtr(atrShort) ? atrShort : props.getStartPrice() * 0.001;
+        this.atrLongBase = isValidAtr(atrLong) ? atrLong : props.getStartPrice() * 0.003;
+        this.atrShortCurrent = this.atrShortBase;
+        this.atrLongCurrent = this.atrLongBase;
+        this.smoothness = smoothness;
+        this.tBarsPerB = tBarsPerB;
+    }
 
-	private void startNewInnerTrend(int direction)
-	{
-		InnerTrend iTrend;
-		barsFollowingTrend = props.getRand().nextInt(trendCur.maxBarPerTrend - trendCur.minBarPerTrend) + 
-							 trendCur.minBarPerTrend - 1;
-		if (barsFollowingTrend + trendCur.currentBar > trendCur.duration)
-		{
-			barsFollowingTrend = trendCur.duration - trendCur.currentBar;
-		}
-		iTrend = new InnerTrend(direction, barsFollowingTrend);
-		iTrend.barStart = trendCur.currentBar;		
-		iTrend.openPrice = currentBar.getOpen();
-		trendCur.innerTrends.add(iTrend);
-		trendFollowing = true;
-	}
-	
-	private double evaluateRevertDirection(double priceChange)
-	{
-		int limitBroken = 0;
-		
-		if (previousBar.getClose() + priceChange > trendCur.higher)
-		{
-			limitBroken = 1;
-			priceChange *= -1;
-		}
-		else if (previousBar.getClose() + priceChange < trendCur.lower)
-		{
-			limitBroken = -1;
-			priceChange *= -1;
-		}
-		if (limitBroken == 0)
-		{
-			return priceChange;
-		}
-		
-		// A limit was going to be broken, make sure that the trend will go towards
-		// the opposite direction
-		if (trendFollowing)
-		{
-			if (limitBroken == trendCur.direction)
-			{
-				closeLastInnerTrend();
-				startNewInnerTrend(limitBroken * -1);
-			}
-		}
-		else
-		{
-			startNewInnerTrend(limitBroken * -1);
-		}
-		return(priceChange);
-	}
+    private boolean isValidAtr(double v) {
+        return !Double.isNaN(v) && !Double.isInfinite(v) && v > 0;
+    }
 
-	/*
-	 * evaluates if the current bar is part of an already running inner trend
-	 * If yes evaluate if it is reaching the higher / lower limits of the trend and revert if necessary
-	 */
-	private void evaluateTrendEnter()
-	{
-		InnerTrend iTrend;
-		
-		if (!approachingEndOfTrend &&
-			(trendCur.currentBar >= trendCur.duration - props.getBarsToEndOfTrend()))
-		{
-			// if the number of bars left are less than the considerApproachingEndOfTrend value in %
-			// starts having an eye of regard to the convergency of the trend towards the target point
-			log.debug("Current bar " + trendCur.currentBar + " entering the approachingEnd phase");
+    private void updateAtr() {
+        double volatility = Math.max(0.05, 1.0 - smoothness);
+        double maxMoveShort = atrShortBase * volatility * 0.2;
+        double maxMoveLong = atrLongBase * volatility * 0.2;
+        atrShortCurrent += (rand.nextDouble() - 0.5) * 2.0 * maxMoveShort;
+        atrLongCurrent += (rand.nextDouble() - 0.5) * 2.0 * maxMoveLong;
+        atrShortCurrent = Math.max(atrShortBase * 0.3, Math.min(atrShortBase * 2.5, atrShortCurrent));
+        atrLongCurrent = Math.max(atrLongBase * 0.3, Math.min(atrLongBase * 2.5, atrLongCurrent));
+    }
 
-			if (trendFollowing)
-			{
-				iTrend = trendCur.innerTrends.get(trendCur.innerTrends.size() - 1);
-				if (iTrend.direction != trendCur.direction)
-				{
-					closeLastInnerTrend();
-				}
-			}
-			startNewInnerTrend(trendCur.direction);
-			approachingEndOfTrend = true;			
-		}
-		
-		if (!trendFollowing)
-		{
-			if (props.getRand().nextDouble() > 1 - props.getProbabilityToEnterTrend())
-			{
-				directionToGo = (props.getRand().nextBoolean() ? 1 : - 1);
-				startNewInnerTrend(directionToGo);
-			}
-			else
-			{
-				directionToGo = (int) Math.signum(trendCur.targetPrice - currentBar.getOpen());
-			}
-		}
-		else
-		{
-			directionToGo = trendCur.innerTrends.get(trendCur.innerTrends.size() - 1).direction;
-			if (--barsFollowingTrend == 0)
-			{
-				closeLastInnerTrend();
-			}
-		}
-	
-		currentBar.setTrendFollowing(directionToGo);
-	}
-	
-	private double calculateBarSize()
-	{
-		double barSize = 1;
-		double barSizeBand = props.getRand().nextDouble();
-		for(int k = 0; k < props.getBarsSizeNumOfBarsPercentage().length; k++)
-		{
-			if (barSizeBand <= props.getBarsSizeNumOfBarsPercentage(k))
-			{
-				barSize = props.getBarsSizeAverageBarSizePercentage(k) * trendCur.barSizeAmplifier;
-				break;
-			}
-		}
-		log.trace("Probability for barSize " + String.format("%8.6f%%", barSizeBand) + " " +
-				  "barSize retrieved " + String.format("%8.6f%%", barSize));
+    public List<Bar> generateBars(List<Trend> trends, double startPrice, long startTimestamp, int barsIntervalMs) {
+        List<Bar> allBars = new ArrayList<>();
+        currentPrice = startPrice;
+        currentTimestamp = startTimestamp;
+        bBarIndex = 0;
 
-		// Randomly select the effective direction, giving more chances to the 
-		// current direction to go
-		double random;
-		random = directionToGo * 0.75 +
-				 (directionToGo < 0 ? 1 : -1 ) * props.getRand().nextDouble();
+        for (Trend trend : trends) {
+            trend.openPrice = currentPrice;
+            double trendCloseTarget = currentPrice + trend.variationPoints;
 
-		barSize *= Math.signum(random);
-		currentBar.setIntrabarVol(barSize);
-		
-		barSize *= trendCur.maxBarSize;
-		return barSize;
-	}
-	
-	
-	private long calculateVolume()
-	{
-		long volumeChange = (long) (props.getRand().nextDouble() - .5) * 2;
-        return props.getInitialVolume() + volumeChange * props.getInitialVolume();
-	}
-	
-			public List<Bar> blockHandler(Block block, double openPrice, double closePrice, long timestamp)
-	{
-		List<Bar> blockBars = new ArrayList<Bar>();
-		Trend trendPrev = block.getTrend(0);
-		trendPrev.closePrice = openPrice;
-		trendPrev.timestampEnd = timestamp;
-		
-		previousBar = new Bar(trendPrev.timestampEnd, 0, 0, 0); // the simulated previous mkt bar
-		previousBar.setClose(closePrice);
-		previousBar.setOpen(openPrice);
-		log.debug("=> HANDLING BLOCK Id " + block.getId());
-		// Iterate over all the Trends defined within the block
-		for(int y = 0; y < block.getNumOfTrends(); y++)
-		{
-			innerTrendSign = 0;
-			trendCur = block.getTrend(y + 1);
-			trendCur.id = y + 1;
-			trendCur.openPrice = previousBar.getClose();
-			switch(trendCur.direction)
-			{
-			case Trend.LONG:
-				trendCur.lower = trendCur.openPrice;
-				trendCur.higher = trendCur.openPrice + trendCur.deltaPoints;
-				break;
-			case Trend.SHORT:
-				trendCur.lower = trendCur.openPrice + trendCur.deltaPoints;
-				trendCur.higher = trendCur.openPrice;
-				break;
-			case Trend.LATERAL:
-				trendCur.lower = trendCur.openPrice - trendCur.deltaPoints / 2;
-				trendCur.higher = trendCur.openPrice + trendCur.deltaPoints / 2;
-				break;
-			}
-			
-			trendCur.closePrice = trendCur.openPrice + trendCur.deltaPoints;
-			trendCur.timestampStart = trendPrev.timestampEnd + 
-									  props.getBarsIntervalInMinutes() * 60000;
-			trendCur.currentBar = 0;
-			approachingEndOfTrend = false;
+            for (int b = 0; b < trend.duration; b++) {
+                ++bBarIndex;
+                updateAtr();
 
-			log.debug("****** NEW TRAND STARTING (trend Id " + trendCur.id + "). Traget price is " +
-					  trendCur.targetPrice);
-			
-			// iterate on calculating bars for the duration of the trend
-			for(int i = 0; i < trendCur.duration; i++)
-			{
-				trendCur.targetPrice = trendCur.openPrice + 
-									   trendCur.deltaPoints / trendCur.duration * (i + 1);
-				
-				trendCur.currentBar++;
+                double bProgress = (double) (b + 1) / trend.duration;
+                double bCloseTarget = trend.openPrice + trend.variationPoints * bProgress;
 
-				// Create the new bar to be calculated
-				currentBar = new Bar(previousBar.getTimestamp(), props.getBarsIntervalInMinutes() * 60000, 0, 0);
+                double bCloseNoise = (rand.nextDouble() - 0.5) * 2.0 * atrLongCurrent * 0.3;
+                double bClose = bCloseTarget + bCloseNoise;
 
-				if (currentBar.isStartOfDayBar())
-				{
-				}
-				
-				// the openPrice of the current bar is set to the last close price 
-				// (e.g. no preopen phase is currently considered)
-				currentBar.setOpen(previousBar.getClose()); 
-				
-				// within the current trend, minitrends (aka as inner trend) may happen if configured so
-				// Evaluate if an innert trend starts on this bar and record it eventually
-				evaluateTrendEnter();
-				
-				double priceChange = calculateBarSize();
-				
-				priceChange = Math.round(priceChange * (1 / props.getMarketTick())) * props.getMarketTick();
-				log.debug("Bar " + trendCur.currentBar + " " +
-						  "open " + currentBar.getOpen() + " target " + trendCur.targetPrice + " " +
-						  "direction to go " + (innerTrendSign == 1 ? "LONG" : "SHORT") + " " +
-						  "intrabarVol " + String.format("%8.6f%%", currentBar.getIntrabarVol()) + " " +
-						  "priceChange " + priceChange);
-				
-				priceChange = evaluateRevertDirection(priceChange);
-				
-				currentBar.setClose(previousBar.getClose() + priceChange);
-				currentBar.setHighAndLow(i, trendCur);
-				currentBar.setVolume(calculateVolume());
+                // For the last B bar of a trend, converge exactly to the trend target
+                if (b == trend.duration - 1) {
+                    bClose = trendCloseTarget;
+                }
 
-				blockBars.add(currentBar);
-				previousBar = currentBar;
-			}
-			if ((currentBar.getClose() != trendCur.openPrice + trendCur.deltaPoints) &&
-				(trendCur.direction != 0))
-			{
-				currentBar.setClose(trendCur.openPrice + trendCur.deltaPoints);
-			}
-			trendCur.closePrice = currentBar.getClose();
-			trendCur.timestampEnd = currentBar.getTimestamp();
-			trendPrev = trendCur;
-			trendFollowing = false;
-			log.debug("****** TRAND Id " + trendCur.id + 
-					  " is over. CLosed at price " + trendCur.closePrice + "\n\n");
-		}
+                double bHigh = Math.max(currentPrice, bClose) + atrLongCurrent * 0.2 * rand.nextDouble();
+                double bLow = Math.min(currentPrice, bClose) - atrLongCurrent * 0.2 * rand.nextDouble();
 
-		return blockBars;
-	}
+                long lastTs = currentTimestamp;
 
+                // Generate T bars for this B bar period
+                for (int t = 0; t < tBarsPerB; t++) {
+                    double tProgress = (double) (t + 1) / tBarsPerB;
+
+                    double tOpen = (t == 0) ? currentPrice : allBars.get(allBars.size() - 1).getClose();
+                    double tCloseTarget = currentPrice + (bClose - currentPrice) * tProgress;
+                    double tCloseNoise = (rand.nextDouble() - 0.5) * 2.0 * atrShortCurrent * 0.3;
+                    double tClose = tCloseTarget + tCloseNoise;
+
+                    // Keep T close within B bar range
+                    double bBarLow = Math.min(currentPrice, bClose);
+                    double bBarHigh = Math.max(currentPrice, bClose);
+                    tClose = Math.max(bBarLow, Math.min(bBarHigh, tClose));
+
+                    // H/L based on ATR smoothness
+                    double bodySize = Math.abs(tClose - tOpen);
+                    double shadowFraction = Math.max(0.05, 1.0 - smoothness) * 0.5;
+                    double shadow = bodySize * shadowFraction * (0.5 + rand.nextDouble() * 0.5);
+                    shadow = Math.min(shadow, atrShortCurrent * 0.5);
+
+                    // Distribute shadow based on direction
+                    double tHigh, tLow;
+                    if (tClose >= tOpen) {
+                        tHigh = tClose + shadow;
+                        tLow = tOpen - shadow * 0.4;
+                    } else {
+                        tHigh = tOpen + shadow * 0.4;
+                        tLow = tClose - shadow;
+                    }
+
+                    // Keep within B bar bounds
+                    tHigh = Math.max(tHigh, Math.max(tOpen, tClose));
+                    tLow = Math.min(tLow, Math.min(tOpen, tClose));
+                    tHigh = Math.min(tHigh, bHigh);
+                    tLow = Math.max(tLow, bLow);
+
+                    // Volume: proportional to ATR/price ratio plus randomness
+                    long volume = calculateVolume(bodySize);
+
+                    Bar tBar = new Bar(lastTs, barsIntervalMs, 0, 0);
+                    tBar.setOpen(tOpen);
+                    tBar.setClose(tClose);
+                    tBar.setHigh(tHigh);
+                    tBar.setLow(tLow);
+                    tBar.setVolume(volume);
+
+                    allBars.add(tBar);
+                    lastTs = tBar.getTimestamp();
+                }
+
+                currentPrice = bClose;
+                currentTimestamp = lastTs;
+            }
+
+            trend.closePrice = currentPrice;
+        }
+
+        return allBars;
+    }
+
+    private long calculateVolume(double bodySize) {
+        double baseVolume = props.getInitialVolume();
+        double atrRatio = atrShortCurrent / Math.max(props.getStartPrice(), 1.0);
+        double volumeMultiplier = 1.0 + atrRatio * 100.0;
+        double noise = 0.5 + rand.nextDouble();
+        return Math.max(1, (long) (baseVolume * volumeMultiplier * noise));
+    }
 }

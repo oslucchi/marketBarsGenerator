@@ -36,92 +36,10 @@ public class Bar {
         }
     }
     
-    public void setHighAndLow(int i, Trend trendCur)
+    public void setHighAndLow(double shadowSizeHigh, double shadowSizeLow)
     {
-		// Magnitude of the current bar
-    	double barBodySize;
-    	if (props.getUseCurrentBarSizeAsReferenceForShadows())
-    	{
-    		barBodySize = Math.abs(close - open);
-    	}
-    	else
-    	{
-    		barBodySize = trendCur.maxBarSize;
-    	}
-    	
-		double[] shadowSize = new double[2];
-		
-		// get the percentage of the barBodySize to use randomly from the distribution
-		// in configuration file.
-		// both LOW and HIGH are taken randomly and eventually used below (see comments down)
-		double shadowSizeBand = props.getRand().nextDouble();
-		for(int j = 0; j < 2; j++)
-		{
-			shadowSizeBand = props.getRand().nextDouble();
-			for(int k = 0; k < props.getShadowSizeNumOfBarsPercentage().length; k++)
-			{
-				if (shadowSizeBand <= props.getShadowSizeNumOfBarsPercentage()[k])
-				{
-					shadowSize[j] = props.getShadowSizeAverageBarSizePercentage()[k] * 
-									trendCur.shadowSizeAmplifier;
-					break;
-				}
-			}
-		}
-
-		// Calculate the effective vale of the LOW shadow and round it to the tick
-		shadowSize[LOW] = Math.round((barBodySize * shadowSize[LOW]) / props.getMarketTick()) * 
-				  props.getMarketTick();
-		
-		// Calculation of the HIGH
-		if (props.getSameHighAndLowDepth())
-		{
-			// It is required to generate simmetric shadow
-			shadowSize[HIGH] = shadowSize[LOW];
-		}
-		else
-		{
-			if (props.getUseRandomOnBothHighAndLow())
-			{
-				// Both shadows should be random. Use the previously random number
-				// we got from distribution above as we did for the LOW shadow
-				shadowSize[HIGH] = Math.round((barBodySize * shadowSize[HIGH]) / props.getMarketTick()) * 
-								   props.getMarketTick();
-			}
-			else
-			{
-				// Take the size of the LOW shadow as the total size of the shadows, randomly generate
-				// a 'split' point within it and assign one part of it to the LOW and one to the HIGH
-				// following the direction the current bar goes, unless (randomly) we enter the case 
-				// to revert this direction. The probability is ruled by the parameter 
-				// shadowSizeToFollowTrendDirectionAt expressing the probability the shadow are oriented
-				// oppositely from the trade direction
-				
-				double partOfShadowAllocated = props.getRand().nextDouble();
-				double shadowsGreater = (partOfShadowAllocated > 0.5 ? partOfShadowAllocated : 1 - partOfShadowAllocated);
-				int highIdx, lowIdx;
-				if ((close > open) && 
-					(props.getRand().nextDouble() < props.getShadowSizeToFollowTrendDirectionAt()))
-				{
-					highIdx = 1;
-					lowIdx = 0;
-				}
-				else
-				{
-					highIdx = 0;
-					lowIdx = 1;
-				}
-				shadowSize[highIdx] = Math.round((shadowSize[LOW] * shadowsGreater) / props.getMarketTick()) * 
-						  props.getMarketTick();
-				shadowSize[lowIdx] = Math.round(shadowSize[LOW] * (1 - shadowsGreater) / props.getMarketTick()) * 
-						   props.getMarketTick();
-			}
-		}
-		
-		double reference = Math.max(open, close);
-		high = reference + shadowSize[HIGH];
-		reference = Math.min(open, close);
-		low = reference - shadowSize[LOW];
+		high = Math.max(open, close) + shadowSizeHigh;
+		low = Math.min(open, close) - shadowSizeLow;
     }
     
     public Bar(long lastTimestamp, long msInterval) 
@@ -157,43 +75,77 @@ public class Bar {
 	public void setTimestampOnCalendar(long lastTimestamp, long msInterval)
 	{
 		startOfDayBar = false;
-		
-		Calendar today = Calendar.getInstance();
-		today.setTime(new Date(lastTimestamp));
 
-		Calendar nextOpen = (Calendar) today.clone();
-		nextOpen.set(Calendar.HOUR_OF_DAY, props.getMktOpenTime()[0]);
-		nextOpen.set(Calendar.MINUTE, props.getMktOpenTime()[1]);
-		nextOpen.set(Calendar.SECOND, props.getMktOpenTime()[2]);
-		
-		Calendar todayClose = (Calendar) nextOpen.clone();
-		nextOpen.add(Calendar.DAY_OF_YEAR, 1);
+		Calendar cal = Calendar.getInstance();
+		cal.setTime(new Date(lastTimestamp));
+		cal.add(Calendar.MILLISECOND, (int) msInterval);
 
-		todayClose.add(Calendar.HOUR, (int) props.getMarketOpenedHours());
-		todayClose.set(Calendar.MINUTE, (int) (60 * (props.getMarketOpenedHours() - 
-											   (int)props.getMarketOpenedHours())));
-		todayClose.add(Calendar.MINUTE, - props.getBarsIntervalInMinutes()); 
-		
-		today.add(Calendar.MILLISECOND, (int) msInterval);
-		if (today.compareTo(todayClose) > 0)
+		// Define today's exchange open and close
+		Calendar exchangeOpen = Calendar.getInstance();
+		exchangeOpen.setTime(cal.getTime());
+		exchangeOpen.set(Calendar.HOUR_OF_DAY, props.getExchangeFromHour());
+		exchangeOpen.set(Calendar.MINUTE, props.getExchangeFromMinute());
+		exchangeOpen.set(Calendar.SECOND, 0);
+		exchangeOpen.set(Calendar.MILLISECOND, 0);
+
+		Calendar exchangeClose = Calendar.getInstance();
+		exchangeClose.setTime(cal.getTime());
+		exchangeClose.set(Calendar.HOUR_OF_DAY, props.getExchangeToHour());
+		exchangeClose.set(Calendar.MINUTE, props.getExchangeToMinute());
+		exchangeClose.set(Calendar.SECOND, 0);
+		exchangeClose.set(Calendar.MILLISECOND, 0);
+
+		// If outside exchange hours, move to next exchange open
+		if (cal.before(exchangeOpen))
 		{
-			// after day close, mark it as the next day
 			startOfDayBar = true;
-			// move the timestamp to the open time of the next day
-			today = nextOpen;
+			cal.setTime(exchangeOpen.getTime());
 		}
-		
-        switch(today.get(Calendar.DAY_OF_WEEK) )
-        {
-        case Calendar.SATURDAY:
-        	today.add(Calendar.DAY_OF_YEAR, 2);
-         	break;
-        case Calendar.SUNDAY:
-        	today.add(Calendar.DAY_OF_YEAR, 1);
-        	break;
-        }
-        
-		this.timestamp = today.getTimeInMillis();
+		else if (cal.after(exchangeClose))
+		{
+			startOfDayBar = true;
+			cal.add(Calendar.DAY_OF_YEAR, 1);
+			cal.set(Calendar.HOUR_OF_DAY, props.getExchangeFromHour());
+			cal.set(Calendar.MINUTE, props.getExchangeFromMinute());
+			cal.set(Calendar.SECOND, 0);
+			cal.set(Calendar.MILLISECOND, 0);
+		}
+
+		// Advance past closed days (weekends via openDays) and holidays
+		boolean[] openDays = props.getOpenDays();
+		java.util.List<String> holidays = props.getHolidays();
+		int maxLoops = 30;
+		while (maxLoops-- > 0)
+		{
+			int dow = cal.get(Calendar.DAY_OF_WEEK) - 1; // Calendar.MONDAY=2 -> index 1
+			if (dow >= 0 && dow < openDays.length && !openDays[dow])
+			{
+				cal.add(Calendar.DAY_OF_YEAR, 1);
+				cal.set(Calendar.HOUR_OF_DAY, props.getExchangeFromHour());
+				cal.set(Calendar.MINUTE, props.getExchangeFromMinute());
+				cal.set(Calendar.SECOND, 0);
+				cal.set(Calendar.MILLISECOND, 0);
+				startOfDayBar = true;
+				continue;
+			}
+
+			String dateStr = String.format("%02d/%02d",
+				cal.get(Calendar.DAY_OF_MONTH), cal.get(Calendar.MONTH) + 1);
+			if (holidays.contains(dateStr))
+			{
+				cal.add(Calendar.DAY_OF_YEAR, 1);
+				cal.set(Calendar.HOUR_OF_DAY, props.getExchangeFromHour());
+				cal.set(Calendar.MINUTE, props.getExchangeFromMinute());
+				cal.set(Calendar.SECOND, 0);
+				cal.set(Calendar.MILLISECOND, 0);
+				startOfDayBar = true;
+				continue;
+			}
+
+			break;
+		}
+
+		this.timestamp = cal.getTimeInMillis();
 		if (startOfDayBar)
 		{
 			intradayVol = calculateIntradayVol();
@@ -324,7 +276,7 @@ public class Bar {
 
     public String bOutput(int barNumber) {
     	SimpleDateFormat date = new SimpleDateFormat("dd/MM/YYYY");
-    	SimpleDateFormat time = new SimpleDateFormat("HH:mm");
+    	SimpleDateFormat time = new SimpleDateFormat("HH:mm:ss");
     	Date ts = new Date(timestamp);
         return String.format(Locale.US, "B,%s,%s,%.2f,%.2f,%.2f,%.2f,%d,%d", 
         					 date.format(ts), time.format(ts), open, high, low, close, (volume == 0 ? 1000 : volume), barNumber);
@@ -332,7 +284,7 @@ public class Bar {
 
     public String tOutput(long subTimestamp, double subOpen, double subHigh, double subLow, double subClose, long subVolume, int barNumber) {
     	SimpleDateFormat date = new SimpleDateFormat("dd/MM/YYYY");
-    	SimpleDateFormat time = new SimpleDateFormat("HH:mm");
+    	SimpleDateFormat time = new SimpleDateFormat("HH:mm:ss");
     	Date ts = new Date(subTimestamp);
         return String.format(Locale.US, "T,%s,%s,%.2f,%.2f,%.2f,%.2f,%d,%d",
                              date.format(ts), time.format(ts), subOpen, subHigh, subLow, subClose, subVolume, barNumber);

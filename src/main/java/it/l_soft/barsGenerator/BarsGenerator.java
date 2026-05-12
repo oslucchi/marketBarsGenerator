@@ -19,81 +19,138 @@ import it.l_soft.barsGenerator.comms.Publisher;
 
 public class BarsGenerator {
 	static final Logger log = Logger.getLogger(BarsGenerator.class);
-	static String barsSourcePath = "";
-	static int howManyBars = 0;
 
 	public static void main(String[] args) throws Exception {
-		ApplicationProperties props = ApplicationProperties.getInstance();
-		boolean publishFromCSV = false;
+		String configPath = null;
+		String symbol = null;
+		int shortDurationSec = 60;
+		int longDurationSec = 300;
+		int tBarsPerB = 1;
+		String publishFilePath = null;
+		String writeFilePath = null;
+		boolean publish = false;
 
 		for (int i = 0; i < args.length; i++) {
 			switch (args[i]) {
-			case "-f":
-				props = ApplicationProperties.getInstance(args[++i]);
+			case "-c":
+				configPath = args[++i];
 				break;
 			case "-s":
-				barsSourcePath = args[++i];
-				publishFromCSV = true;
+				symbol = args[++i];
 				break;
-			case "-n":
-				howManyBars = Integer.parseInt(args[++i]);
+			case "-d":
+				String[] parts = args[++i].split(",");
+				shortDurationSec = Integer.parseInt(parts[0].trim());
+				longDurationSec = Integer.parseInt(parts[1].trim());
+				break;
+			case "-F":
+				publishFilePath = args[++i];
+				publish = true;
+				break;
+			case "-W":
+				writeFilePath = args[++i];
+				break;
+			case "-P":
+				publish = true;
 				break;
 			default:
-				System.out.println(String.format("Invalid option '%s'.\nusage: %s [-f conf] [-s bar source] [-n # bars to publish",
-												 args[i], args[0]));
+				System.out.println(String.format("Invalid option '%s'.\n" +
+					"usage: %s [-c conf] [-s symbol] [-d shortDur,longDur] " +
+					"[-F file | -W file | -P]",
+					args[i], "BarsGenerator"));
 				System.exit(-1);
 			}
 		}
 
-		SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
-		System.out.println("Simulation starting on date: " + props.getStartDate());
-		System.out.println("Writing results in: " + System.getProperty("user.dir"));
-
-		Date startTimeStamp = sdf.parse(props.getStartDate() + " " + props.getStartTime());
-		Calendar cal = Calendar.getInstance();
-		cal.setTime(startTimeStamp);
-		cal.add(Calendar.DAY_OF_YEAR, -1);
-		cal.set(Calendar.HOUR_OF_DAY, (int) (props.getMarketOpenedHours() + props.getMktOpenTime()[0]));
-		cal.set(Calendar.MINUTE, props.getMktOpenTime()[1]);
-		cal.set(Calendar.SECOND, props.getMktOpenTime()[2]);
-		startTimeStamp = cal.getTime();
-
-		Bar mb = new Bar(startTimeStamp.getTime(), -props.getBarsIntervalInMinutes() * 60000, 0, 0);
-		mb.setClose(props.getStartPrice());
-		mb.setOpen(props.getStartPrice());
-
-		List<Bar> allBars = new ArrayList<>();
-		List<Block> period = new ArrayList<>();
-		allBars.add(mb);
-		System.out.println("Working directory: " + new java.io.File(".").getAbsolutePath());
-
-		// Step 1: Populate allBars from generation or file
-		if (!publishFromCSV) {
-			MarketSimulator simulator = new MarketSimulator();
-			for (int i = 0; i < props.getTotalNumberOfPeriodsToGenerate(); i++) {
-				Block blockToRun = props.getBlock(props.getBlocksSequence()[i] - 1).clone();
-				List<Bar> bars = simulator.blockHandler(blockToRun, mb.getOpen(), mb.getClose(), mb.getTimestamp());
-				period.add(blockToRun);
-				allBars.addAll(bars);
-				mb = bars.get(bars.size() - 1);
-			}
-			allBars.remove(0);
-		} 
-		else {
-			readBarsFromCSV(allBars, barsSourcePath, howManyBars, props);
+		if (writeFilePath != null && publish && publishFilePath == null) {
+			System.err.println("-W and -P are mutually exclusive");
+			System.exit(1);
 		}
 
-		// Step 2: Publish if enabled
-		if (props.getPublishData()) {
+		if (configPath != null) {
+			ApplicationProperties.getInstance(configPath);
+		}
+		ApplicationProperties props = ApplicationProperties.getInstance();
+
+		SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+		System.out.println("Simulation starting on date: " + props.getStartDate());
+
+		List<Bar> allBars = new ArrayList<>();
+
+		if (publishFilePath != null) {
+			// -F mode: read from file and publish
+			readBarsFromCSV(allBars, publishFilePath, 0, props);
+			System.out.println("Read " + allBars.size() + " bars from " + publishFilePath);
+			if (allBars.isEmpty()) {
+				System.err.println("No bars read, nothing to publish");
+				System.exit(1);
+			}
+		} else {
+			// Generate mode: need symbol and durations
+			if (symbol == null) {
+				System.err.println("-s symbol is required for generation mode");
+				System.exit(1);
+			}
+
+			// Export Polygon API key as system property for MarketAtrFetcher
+			String apiKey = props.getPolygonApiKey();
+			if (apiKey != null && !apiKey.isEmpty()) {
+				System.setProperty("POLYGON_API_KEY", apiKey);
+			}
+
+			// Fetch B-bar ATR from Polygon, derive T-bar ATR via sqrt-of-time
+			double atrShort, atrLong, smoothness;
+
+			try {
+				int[] fetchDuration = {longDurationSec};
+				MarketAtrFetcher fetcher = new MarketAtrFetcher(symbol, fetchDuration);
+				MarketAtrFetcher.AtrResult atrResult = fetcher.fetchAtrValues();
+				atrLong = atrResult.atr(0);
+				smoothness = atrResult.smoothness(0);
+				double timeRatio = (double) shortDurationSec / (double) longDurationSec;
+				atrShort = atrLong * Math.sqrt(timeRatio);
+				System.out.println(String.format("ATR short=%s (derived) long=%s (fetched) smoothness=%.4f",
+					formatAtr(atrShort), formatAtr(atrLong), smoothness));
+			} catch (Exception e) {
+				System.out.println("ATR fetch failed: " + e.getMessage() + " — using fallback defaults");
+				atrLong = props.getStartPrice() * 0.003;
+				double timeRatio = (double) shortDurationSec / (double) longDurationSec;
+				atrShort = atrLong * Math.sqrt(timeRatio);
+				smoothness = 0.5;
+			}
+
+			// Load trends from config
+			TrendSequenceGenerator trendGen = new TrendSequenceGenerator(props);
+			List<Trend> trends = trendGen.generateSequence();
+
+			// Calculate timestamps and T bars per B period
+			int barsIntervalMs = shortDurationSec * 1000;
+			Date startTimeStamp = sdf.parse(props.getStartDate() + " " + props.getStartTime());
+			Calendar cal = Calendar.getInstance();
+			cal.setTime(startTimeStamp);
+			cal.add(Calendar.MILLISECOND, -barsIntervalMs);
+			startTimeStamp = cal.getTime();
+
+			tBarsPerB = longDurationSec / shortDurationSec;
+
+			// Generate bars using ATR-driven simulator
+			MarketSimulator simulator = new MarketSimulator(atrShort, atrLong, smoothness, tBarsPerB);
+			allBars = simulator.generateBars(trends, props.getStartPrice(), startTimeStamp.getTime(), barsIntervalMs);
+
+			System.out.println("Generated " + allBars.size() + " T bars across " + trends.size() + " trends");
+		}
+
+		// Publish if -P or -F mode
+		if (publish) {
 			Publisher publisher = new Publisher();
 			publisher.start();
 			System.out.println("Waiting for a client to connect...");
 			while (publisher.clientList.size() == 0) {
 				Thread.sleep(1000);
 			}
-			System.out.println("Client connected, let's go!");
+			System.out.println("Client connected, starting publish...");
 
-			BarPublisherService barPublisher = new BarPublisherService(publisher);
+			BarPublisherService barPublisher = new BarPublisherService(publisher, tBarsPerB);
 			barPublisher.publishList(allBars);
 
 			publisher.interrupt();
@@ -102,93 +159,47 @@ public class BarsGenerator {
 				Thread.sleep(1000);
 				count++;
 			}
-			if (publishFromCSV) {
-				System.exit(0);
+			// Skip CSV/Excel output for publish-only modes
+			if (writeFilePath == null) return;
+		}
+
+		// Determine CSV output path: -W flag takes priority, else properties default
+		String outputCsvPath = writeFilePath;
+		if (outputCsvPath == null) {
+			String pathToSave = (props.getCSVArchiveFolderPath() != null
+					? props.getCSVArchiveFolderPath() + File.separator
+					: null);
+			if (pathToSave != null) {
+				String runExtension = new SimpleDateFormat("yyMMdd_HHmmss").format(new Date());
+				String outFileName = (props.getOutputFileNamePreamble() != null ? props.getOutputFileNamePreamble()
+						: "tradiaBars");
+				outputCsvPath = pathToSave + outFileName + "_" + runExtension + ".csv";
 			}
 		}
 
-		if (publishFromCSV) {
-			return;
+		if (outputCsvPath != null) {
+			writeBarsToCSV(allBars, outputCsvPath, props, tBarsPerB);
+			System.out.println("Wrote bars to " + outputCsvPath);
 		}
 
-		// Step 3: CSV dump with synthetic T/B ticks
-		String pathToSave = (props.getCSVArchiveFolderPath() != null
-				? props.getCSVArchiveFolderPath() + File.separator
-				: System.getProperty("user.dir") + File.separator + "output" + File.separator);
-
-		String runExtension = new SimpleDateFormat("yyMMdd_HHmmss").format(new Date());
-		String outFileName = (props.getOutputFileNamePreamble() != null ? props.getOutputFileNamePreamble()
-				: "tradiaBars");
-
-		PrintWriter tradiaWriter = new PrintWriter(pathToSave + outFileName + "_" + runExtension + ".csv", "UTF-8");
-		int barIdx = 0;
-		int lineNumber = 0;
-		int pCount = 0;
-
-		for (Block block : period) {
-			log.debug("\n\nBlock " + pCount++ + " -- used blockId: " + block.getId());
-			for (int i = 1; i < block.getTrends().length; i++) {
-				Trend trend = block.getTrend(i);
-				log.debug(String.format(
-						"*** New trend: direction %s - duration %d - open %8.2f - target %8.2f - close %8.2f",
-						(trend.direction == 1 ? "long" : (trend.direction == 0 ? "lateral" : "short")),
-						trend.duration, trend.openPrice, trend.targetPrice, trend.closePrice));
-				log.debug(String.format("%-14.14s %10.8s %10.8s %10.8s %10.8s %10.8s %12.12s %6.6s",
-						"Time", "Open", "High", "Low", "Close", "Volume", "Applied Vol", "Trend"));
-				log.debug(allBars.get(barIdx).toString());
-				for (int y = 0; y < trend.duration; y++) {
-					Bar bBar = allBars.get(barIdx);
-					// Write T intra-bar ticks before the consolidated bar
-					int numTicks = props.getTicksPerBar();
-					if (numTicks > 1) {
-						long msInterval = (long) props.getBarsIntervalInMinutes() * 60000;
-						long bBarStart = bBar.getTimestamp() - msInterval;
-						long tickInterval = msInterval / numTicks;
-						double range = Math.max(bBar.getHigh() - bBar.getLow(), 0.01);
-						double prevTickClose = bBar.getOpen();
-						Random r = new Random(bBar.getTimestamp());
-						for (int t = 0; t < numTicks; t++) {
-							long tickTs = bBarStart + tickInterval * (t + 1);
-							double fraction = (double) (t + 1) / (double) numTicks;
-							double tickClose = bBar.getOpen() + (bBar.getClose() - bBar.getOpen()) * fraction;
-							double noiseRange = range * 0.15 * (1.0 - fraction * 0.5);
-							double noise = (r.nextDouble() - 0.5) * 2.0 * noiseRange;
-							tickClose += noise;
-							tickClose = Math.min(bBar.getHigh(), Math.max(bBar.getLow(), tickClose));
-
-							double tickOpen = prevTickClose;
-							double tickHigh = Math.max(tickOpen, tickClose) + range * 0.08 * r.nextDouble();
-							double tickLow = Math.min(tickOpen, tickClose) - range * 0.08 * r.nextDouble();
-							tickHigh = Math.min(bBar.getHigh(), tickHigh);
-							tickLow = Math.max(bBar.getLow(), tickLow);
-							long tickVol = 100 + r.nextInt(500);
-
-							lineNumber++;
-							tradiaWriter.println(bBar.tOutput(tickTs, tickOpen, tickHigh, tickLow, tickClose,
-									tickVol, lineNumber));
-							prevTickClose = tickClose;
-						}
-					}
-					// Write B consolidated bar
-					lineNumber++;
-					tradiaWriter.println(bBar.bOutput(lineNumber));
-					barIdx++;
-				}
-				log.debug(allBars.get(barIdx - 1));
-			}
+		// Excel output (only in generation mode with a CSV output)
+		if (outputCsvPath != null && writeFilePath == null) {
+			String runExtension = new SimpleDateFormat("yyMMdd_HHmmss").format(new Date());
+			ExcelOutputHandler excel = new ExcelOutputHandler(runExtension);
+			excel.writeHeaderRows(allBars, tBarsPerB);
+			excel.writeDataRows(allBars);
+			excel.writeChanges();
 		}
-		tradiaWriter.close();
+	}
 
-		// Step 4: Excel output
-		ExcelOutputHandler excel = new ExcelOutputHandler(runExtension);
-		excel.writeHeaderRows(period);
-		excel.writeDataRows(allBars);
-		excel.writeChanges();
+	private static String formatAtr(double v) {
+		if (Double.isNaN(v) || Double.isInfinite(v)) return "NaN";
+		return String.format("%.4f", v);
 	}
 
 	private static void readBarsFromCSV(List<Bar> allBars, String sourceFilePath, int maxBars,
-										ApplicationProperties props) 
-		throws IOException, ParseException 
+										ApplicationProperties props)
+		throws IOException, ParseException
 	{
 		SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
 		Random r = new Random();
@@ -202,7 +213,6 @@ public class BarsGenerator {
 				if (line.isEmpty())
 					continue;
 
-				// Strip B/T topic prefix if present
 				String data = line;
 				if (data.length() >= 2 && (data.charAt(0) == 'B' || data.charAt(0) == 'T')
 						&& (data.charAt(1) == ',' || data.charAt(1) == ';')) {
@@ -245,6 +255,45 @@ public class BarsGenerator {
 		}
 		if (allBars.size() > 0 && allBars.get(0).getTimestamp() == 0) {
 			allBars.remove(0);
+		}
+	}
+
+	private static void writeBarsToCSV(List<Bar> bars, String filePath, ApplicationProperties props, int tBarsPerB)
+		throws IOException
+	{
+		try (PrintWriter pw = new PrintWriter(new File(filePath), "UTF-8")) {
+			int lineNum = 0;
+			for (int i = 0; i < bars.size(); i++) {
+				Bar bar = bars.get(i);
+				lineNum++;
+				pw.println(bar.tOutput(bar.getTimestamp(), bar.getOpen(), bar.getHigh(),
+					bar.getLow(), bar.getClose(), (int) bar.getVolume(), lineNum));
+
+				// Write B cumulative bar every tBarsPerB bars
+				if ((i + 1) % tBarsPerB == 0) {
+					int start = i - (tBarsPerB - 1);
+					double bOpen = bars.get(start).getOpen();
+					double bHigh = Double.MIN_VALUE;
+					double bLow = Double.MAX_VALUE;
+					double bClose = bars.get(i).getClose();
+					long bVol = 0;
+					for (int j = start; j <= i; j++) {
+						Bar b = bars.get(j);
+						if (b.getHigh() > bHigh) bHigh = b.getHigh();
+						if (b.getLow() < bLow) bLow = b.getLow();
+						bVol += b.getVolume();
+					}
+					Bar bBar = new Bar(bar.getTimestamp(), 0, 0, 0);
+					bBar.setTimestamp(bar.getTimestamp());
+					bBar.setOpen(bOpen);
+					bBar.setHigh(bHigh);
+					bBar.setLow(bLow);
+					bBar.setClose(bClose);
+					bBar.setVolume(bVol);
+					lineNum++;
+					pw.println(bBar.bOutput(lineNum));
+				}
+			}
 		}
 	}
 }

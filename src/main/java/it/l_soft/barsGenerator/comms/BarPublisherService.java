@@ -22,12 +22,10 @@ public class BarPublisherService {
 	private boolean cumulativeStarted;
 	private int barsPerCumulative;
 
-	public BarPublisherService(Publisher publisher) {
+	public BarPublisherService(Publisher publisher, int tBarsPerB) {
 		this.publisher = publisher;
 		this.props = ApplicationProperties.getInstance();
-		int intervalMinutes = props.getBarsIntervalInMinutes();
-		int cumulativeMinutes = props.getCumulativePeriodMinutes();
-		this.barsPerCumulative = cumulativeMinutes / intervalMinutes;
+		this.barsPerCumulative = tBarsPerB;
 		if (this.barsPerCumulative < 1) this.barsPerCumulative = 1;
 		resetCumulative();
 	}

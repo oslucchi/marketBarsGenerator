@@ -20,14 +20,12 @@ public class ApplicationProperties {
 	private String decimalSeparator;
 	private String fieldSeparator;
 
-	private int numOfBlocks;
-	private double	marketTick;
 	private int barsIntervalInMinutes;
+	private double marketTick;
 	private int initialVolume;
 	private boolean sameHighAndLowDepth;
 	private boolean useRandomOnBothHighAndLow;
 	private boolean forceConvergenceOnLastBar;
-	private boolean capIntradayVol;
 	private double[] shadowSize_numOfBarsPercentage;
 	private double[] shadowSize_averageBarSizePercentage;
 	private double probabilityToEnterTrend;
@@ -36,9 +34,6 @@ public class ApplicationProperties {
 	private String startDate;
 	private String startTime;
 	private double marketOpenedHours;
-	private int totalNumberOfPeriodsToGenerate;
-	private boolean blocksSequenceRandom;
-	private int[] blocksSequence;
 	private double startPrice;
 	private double[] barsSize_numOfBarsPercentage;
 	private double[] barsSize_averageBarSizePercentage;
@@ -47,20 +42,25 @@ public class ApplicationProperties {
 	private Double maxIntradayVol;
 	private int[] mktOpenTime = new int[3];
 	private boolean useCurrentBarSizeAsReferenceForShadows;
-	
-	private Block[] blocks;
+
+	private int exchangeFromHour;
+	private int exchangeFromMinute;
+	private int exchangeToHour;
+	private int exchangeToMinute;
+	private boolean[] openDays;
+	private java.util.List<String> holidays;
+
+	private Trend[] trends;
 	private Random rand;
 	private static String propertiesPath = null;
 
 	private boolean publishData;
 	private int port;
 	private String host;
+	private String polygonApiKey;
 	private long intraMessagePause;
-	private int ticksPerBar;
-	private int cumulativePeriodMinutes;
 
-	
-	
+
 	public static ApplicationProperties getInstance(String propPath)
 	{
 		if (propPath != null)
@@ -82,6 +82,12 @@ public class ApplicationProperties {
 			instance = new ApplicationProperties();
 		}
 		return(instance);
+	}
+	
+	public static void reset()
+	{
+		instance = null;
+		propertiesPath = null;
 	}
 	
 	private ApplicationProperties()
@@ -168,8 +174,6 @@ public class ApplicationProperties {
 				ExcelArchiveFolderPath = null;
 			}
 					
-			variable = "numOfBlocks";
-			numOfBlocks = Integer.parseInt(properties.getProperty(variable).trim());
 			variable = "barsIntervalInMinutes";
 			barsIntervalInMinutes = Integer.parseInt(properties.getProperty(variable).trim());
 			variable = "marketTick";
@@ -187,8 +191,9 @@ public class ApplicationProperties {
 	        		Double.parseDouble(properties.getProperty(variable).trim()) / 100;
 	        variable = "initialVolume";
 	        initialVolume = Integer.parseInt(properties.getProperty(variable).trim());
-	        variable = "marketOpenedHours";
-	        marketOpenedHours = Double.parseDouble(properties.getProperty(variable).trim());
+	variable = "marketOpenedHours";
+	String mktHoursVal = properties.getProperty(variable);
+	marketOpenedHours = (mktHoursVal != null) ? Double.parseDouble(mktHoursVal.trim()) : 12;
 	        variable = "barsToEndOfTrend";
 	        barsToEndOfTrend = Integer.parseInt(properties.getProperty(variable).trim()) / 100;
 	        variable = "maxIntradayVol";
@@ -200,11 +205,6 @@ public class ApplicationProperties {
 	        variable = "startTime";
 	        startTime = properties.getProperty(variable).trim();
 
-	        variable = "blocksSequenceRandom";
-	        blocksSequenceRandom = Boolean.parseBoolean(properties.getProperty(variable).trim());
-	        variable = "totalNumberOfPeriodsToGenerate";
-	        totalNumberOfPeriodsToGenerate = Integer.parseInt(properties.getProperty(variable).trim());
-	        
 	        variable = "shadowSize.numOfBarsPercentage";
 			values = properties.getProperty(variable).split(",");
 			shadowSize_numOfBarsPercentage = new double[values.length];
@@ -221,7 +221,7 @@ public class ApplicationProperties {
 				shadowSize_averageBarSizePercentage[i] = Double.parseDouble(values[i].trim()) / 100;
 			}
 
-			variable = "barsSize_numOfBarsPercentage";
+			variable = "barsSize.numOfBarsPercentage";
 			values = properties.getProperty("barsSize.numOfBarsPercentage").split(",");
 			barsSize_numOfBarsPercentage = new double[values.length];
 			for(int i = 0; i < values.length; i++)
@@ -229,7 +229,7 @@ public class ApplicationProperties {
 				barsSize_numOfBarsPercentage[i] = Double.parseDouble(values[i].trim()) / 100;
 			}
 			
-			variable = "barsSize_averageBarSizePercentage";
+			variable = "barsSize.averageBarSizePercentage";
 			values = properties.getProperty("barsSize.averageBarSizePercentage").split(",");
 			barsSize_averageBarSizePercentage = new double[values.length];
 			for(int i = 0; i < values.length; i++)
@@ -252,113 +252,31 @@ public class ApplicationProperties {
 				intradayVolDistValue[i] = Double.parseDouble(values[i].trim()) / 100;
 			}
 			
-
-			blocks = new Block[numOfBlocks];
-			for(int i = 1; i <= numOfBlocks; i++)
+			// Read trend definitions
+			variable = "numOfTrends";
+			int numOfTrends = Integer.parseInt(properties.getProperty(variable).trim());
+			trends = new Trend[numOfTrends];
+			for (int i = 1; i <= numOfTrends; i++)
 			{
-		        variable = "B" + i + ".numOfTrendsInBlock";
-		        int iValue = Integer.parseInt(properties.getProperty(variable).trim());
-				blocks[i - 1] = new Block(iValue, 0, i);
-				blocks[i - 1].pushTrend(new Trend(), 0);
-				for(int y = 1; y <= iValue; y++)
-				{
-					Trend trend = new Trend();
-			        variable = "B" + i + ".T" + y +".direction";
-			        trend.direction = Integer.parseInt(properties.getProperty(variable).trim());
-			        
-			        variable = "B" + i + ".T" + y +".duration";
-			        trend.duration = Integer.parseInt(properties.getProperty(variable).trim());
-			        
-			        variable = "B" + i + ".T" + y +".deltaPoints";
-			        trend.deltaPoints = Integer.parseInt(properties.getProperty(variable).trim()) * 
-			        									 (trend.direction != 0 ? trend.direction : 1);
-			        variable = "B" + i + ".T" + y + ".lateralBounceAtDeltaPoints";
-			        try {
-				        trend.lateralBounceAtDeltaPoints = Integer.parseInt(properties.getProperty(variable).trim());
-			        }
-			        catch(Exception e)
-			        {
-			        	if (trend.direction == 0)
-		        		{
-			        		trend.lateralBounceAtDeltaPoints = startPrice * .03;
-		        		}
-			        	else
-		        		{
-			        		trend.lateralBounceAtDeltaPoints = 0;
-		        		}
-			        }
-			        variable = "B" + i + ".T" + y + ".maxBarSize";
-			        trend.maxBarSize = (double) Integer.parseInt(properties.getProperty(variable).trim());
-			        
-			        variable = "B" + i + ".T" + y + ".barSizeAmplifier";
-			        try {
-				        trend.barSizeAmplifier = Double.parseDouble(properties.getProperty(variable).trim());
-			        }
-			        catch(Exception e)
-			        {
-			        	trend.barSizeAmplifier = 1;
-			        }
-			        
-			        variable = "B" + i + ".T" + y + ".shadowSizeAmplifier";
-			        try {
-				        trend.shadowSizeAmplifier = Double.parseDouble(properties.getProperty(variable).trim());
-			        }
-			        catch(Exception e)
-			        {
-			        	trend.shadowSizeAmplifier = 1;
-			        }
-			        
-			        variable = "B" + i + ".T" + y +".capIntradayVol";
-			        trend.capIntradayVol = Boolean.parseBoolean(properties.getProperty(variable).trim());
-			        
-			        variable = "B" + i + ".T" + y +".enableMiniTrends";
-			        trend.enableMiniTrends = Boolean.parseBoolean(properties.getProperty(variable).trim());
-			        
-			        variable = "B" + i + ".T" + y +".maxBarPerTrend";
-			        trend.maxBarPerTrend = Integer.parseInt(properties.getProperty(variable).trim());
-			        					
-			        variable = "B" + i + ".T" + y +".minBarPerTrend";
-			        trend.minBarPerTrend = Integer.parseInt(properties.getProperty(variable).trim());
-			        
-			        blocks[i - 1].pushTrend(trend, y);
-				}
-			}
-			
-			variable = "blocksSequence";
-			values = properties.getProperty(variable).split(",");
-			if (! blocksSequenceRandom)
-			{
-				totalNumberOfPeriodsToGenerate = values.length;
-			}
-			blocksSequence = new int[totalNumberOfPeriodsToGenerate];
-			for(int i = 0; i < values.length; i++)
-			{
-				blocksSequence[i] = Integer.parseInt(values[i].trim());
-			}
-			if (blocksSequenceRandom)
-			{
-				for(int i = values.length; i < totalNumberOfPeriodsToGenerate; i++)
-				{
-					int blockId = 0;		
-					while(true)
-					{
-						blockId = rand.nextInt(numOfBlocks);
-						Trend[] prevBlockTrends = blocks[blocksSequence[i - 1]].getTrends();
-						
-						if ((prevBlockTrends[prevBlockTrends.length - 1].direction == 0) &&
-							(blocks[blockId].getTrends()[1].direction == 0))
-						{
-							continue;
-						}
-						break;
-					}
-					
-					blocksSequence[i] = blockId;
-				}
-			}
-			else
-			{
-				totalNumberOfPeriodsToGenerate = values.length;
+				Trend trend = new Trend();
+				trend.id = i;
+				
+				variable = "T" + i + ".duration";
+				trend.duration = Integer.parseInt(properties.getProperty(variable).trim());
+				
+				variable = "T" + i + ".variationPoints";
+				trend.variationPoints = Integer.parseInt(properties.getProperty(variable).trim());
+				
+				variable = "T" + i + ".enableMiniTrends";
+				trend.enableMiniTrends = Boolean.parseBoolean(properties.getProperty(variable).trim());
+				
+				variable = "T" + i + ".maxBarsPerTrend";
+				trend.maxBarsPerTrend = Integer.parseInt(properties.getProperty(variable).trim());
+				
+				variable = "T" + i + ".minBarsPerTrend";
+				trend.minBarsPerTrend = Integer.parseInt(properties.getProperty(variable).trim());
+				
+				trends[i - 1] = trend;
 			}
     	}
     	catch(NumberFormatException e)
@@ -366,7 +284,7 @@ public class ApplicationProperties {
     		log.error("The format for the variable '" + variable + "' is incorrect (" +
     					 properties.getProperty("sessionExpireTime") + ")", e);
     		System.out.println("The format for the variable '" + variable + "' is incorrect (" +
-					 properties.getProperty("sessionExpireTime") + ")");
+				 properties.getProperty("sessionExpireTime") + ")");
     		System.exit(-1);
     	}
         mktOpenTime[0] = Integer.parseInt(startTime.substring(0, 2));
@@ -403,6 +321,13 @@ public class ApplicationProperties {
 	        	host = properties.getProperty(variable).trim();
 	        }
 
+			variable = "POLYGON_API_KEY";
+			polygonApiKey = "";
+	        if (properties.getProperty(variable) != null)
+	        {
+	        	polygonApiKey = properties.getProperty(variable).trim();
+	        }
+
 			variable = "intraMessagePause";
 			intraMessagePause = 1000;
 	        if (properties.getProperty(variable) != null)
@@ -410,19 +335,71 @@ public class ApplicationProperties {
 	        	intraMessagePause = Long.parseLong(properties.getProperty(variable).trim());
 	        }
 
-			variable = "ticksPerBar";
-			ticksPerBar = 5;
-	        if (properties.getProperty(variable) != null)
-	        {
-	        	ticksPerBar = Integer.parseInt(properties.getProperty(variable).trim());
-	        }
+			variable = "exchangeFromTime";
+			if (properties.getProperty(variable) != null)
+			{
+				String[] timeParts = properties.getProperty(variable).trim().split(":");
+				exchangeFromHour = Integer.parseInt(timeParts[0].trim());
+				exchangeFromMinute = Integer.parseInt(timeParts[1].trim());
+			}
+			else
+			{
+				exchangeFromHour = mktOpenTime[0];
+				exchangeFromMinute = mktOpenTime[1];
+			}
 
-			variable = "cumulativePeriodMinutes";
-			cumulativePeriodMinutes = barsIntervalInMinutes * 5;
-	        if (properties.getProperty(variable) != null)
-	        {
-	        	cumulativePeriodMinutes = Integer.parseInt(properties.getProperty(variable).trim());
-	        }
+			variable = "exchangeToTime";
+			if (properties.getProperty(variable) != null)
+			{
+				String[] timeParts = properties.getProperty(variable).trim().split(":");
+				exchangeToHour = Integer.parseInt(timeParts[0].trim());
+				exchangeToMinute = Integer.parseInt(timeParts[1].trim());
+			}
+			else
+			{
+				int totalMinutes = (int) (exchangeFromHour * 60 + exchangeFromMinute + marketOpenedHours * 60);
+				exchangeToHour = totalMinutes / 60;
+				exchangeToMinute = totalMinutes % 60;
+			}
+
+			variable = "openDays";
+			openDays = new boolean[7];
+			if (properties.getProperty(variable) != null)
+			{
+				String[] days = properties.getProperty(variable).trim().split(",");
+				java.util.Map<String, Integer> dayMap = new java.util.HashMap<>();
+				dayMap.put("Mo", java.util.Calendar.MONDAY - 1);
+				dayMap.put("Tu", java.util.Calendar.TUESDAY - 1);
+				dayMap.put("We", java.util.Calendar.WEDNESDAY - 1);
+				dayMap.put("Th", java.util.Calendar.THURSDAY - 1);
+				dayMap.put("Fr", java.util.Calendar.FRIDAY - 1);
+				dayMap.put("Sa", java.util.Calendar.SATURDAY - 1);
+				dayMap.put("Su", java.util.Calendar.SUNDAY - 1);
+				for (String d : days)
+				{
+					Integer idx = dayMap.get(d.trim());
+					if (idx != null) openDays[idx] = true;
+				}
+			}
+			else
+			{
+				openDays[java.util.Calendar.MONDAY - 1] = true;
+				openDays[java.util.Calendar.TUESDAY - 1] = true;
+				openDays[java.util.Calendar.WEDNESDAY - 1] = true;
+				openDays[java.util.Calendar.THURSDAY - 1] = true;
+				openDays[java.util.Calendar.FRIDAY - 1] = true;
+			}
+
+			variable = "holidays";
+			holidays = new java.util.ArrayList<>();
+			if (properties.getProperty(variable) != null)
+			{
+				String[] h = properties.getProperty(variable).trim().split(",");
+				for (String day : h)
+				{
+					holidays.add(day.trim());
+				}
+			}
         }
         catch(Exception e)
         {
@@ -440,10 +417,6 @@ public class ApplicationProperties {
 
 	public String getFieldSeparator() {
 		return fieldSeparator;
-	}
-
-	public int getNumOfBlocks() {
-		return numOfBlocks;
 	}
 
 	public int getBarsIntervalInMinutes() {
@@ -470,18 +443,6 @@ public class ApplicationProperties {
 		return marketOpenedHours;
 	}
 
-	public int getTotalNumberOfPeriodsToGenerate() {
-		return totalNumberOfPeriodsToGenerate;
-	}
-
-	public boolean getBlocksSequenceRandom() {
-		return blocksSequenceRandom;
-	}
-
-	public int[] getBlocksSequence() {
-		return blocksSequence;
-	}
-
 	public double getStartPrice() {
 		return startPrice;
 	}
@@ -502,12 +463,12 @@ public class ApplicationProperties {
 		return barsSize_averageBarSizePercentage[index];
 	}
 
-	public Block getBlock(int index) {
-		return blocks[index];
+	public Trend[] getTrends() {
+		return trends;
 	}
 
-	public Block[] getBlocks() {
-		return blocks;
+	public Trend getTrend(int index) {
+		return trends[index];
 	}
 
 	public boolean getSameHighAndLowDepth() {
@@ -590,10 +551,6 @@ public class ApplicationProperties {
 		return intradayVolDistValue;
 	}
 
-	public boolean getCapIntradayVol() {
-		return capIntradayVol;
-	}
-
 	public double getShadowSizeToFollowTrendDirectionAt() {
 		return shadowSizeToFollowTrendDirectionAt;
 	}
@@ -622,17 +579,35 @@ public class ApplicationProperties {
 		return host;
 	}
 
+	public String getPolygonApiKey() {
+		return polygonApiKey;
+	}
+
 	public long getIntraMessagePause() {
 		return intraMessagePause;
 	}
 
-	public int getTicksPerBar() {
-		return ticksPerBar;
+	public int getExchangeFromHour() {
+		return exchangeFromHour;
 	}
 
+	public int getExchangeFromMinute() {
+		return exchangeFromMinute;
+	}
 
+	public int getExchangeToHour() {
+		return exchangeToHour;
+	}
 
-	public int getCumulativePeriodMinutes() {
-		return cumulativePeriodMinutes;
+	public int getExchangeToMinute() {
+		return exchangeToMinute;
+	}
+
+	public boolean[] getOpenDays() {
+		return openDays;
+	}
+
+	public java.util.List<String> getHolidays() {
+		return holidays;
 	}
 }

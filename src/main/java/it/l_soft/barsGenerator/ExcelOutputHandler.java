@@ -27,8 +27,8 @@ public class ExcelOutputHandler {
     XSSFRow row;
     XSSFCell cell;
  
-	int rows; // No of rows
-    int rowIdx; // current row
+	int rows;
+    int rowIdx;
 
     String outFilePath;
  	SimpleDateFormat date = new SimpleDateFormat("dd/MM/YYYY HH:mm");
@@ -90,46 +90,35 @@ public class ExcelOutputHandler {
         }
 	}
 	
-	public void writeHeaderRows(List<Block> blocks)
+	public void writeHeaderRows(List<Bar> allBars, int tBarsPerB)
 	{
-		int barStart = 1;
-    	Date ts;
 		rowIdx = 7;
 	    sheet = wb.getSheet("graph");
 
-	    SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/YYYY");
-		for(Block block : blocks)
-		{
-		    for(int i = 1; i < block.getTrends().length; i++)
-		    {
-		    	Trend trend = block.getTrend(i);
+	    Trend[] trends = props.getTrends();
+	    if (trends == null) return;
 
-				row = getRow(rowIdx++);
-	            cell = getCell(row, 0);
-	            cell.setCellValue("B" + String.valueOf(block.getId()) + "." +
-	            				  "T" + String.valueOf(trend.id));
-	            cell = getCell(row, 1);
-	            cell.setCellValue(trend.duration);
-	            cell = getCell(row, 2);
-	            cell.setCellValue("" + String.valueOf(barStart) + "-" + String.valueOf(barStart + trend.duration - 1));
-	            cell = getCell(row, 3);
-	            cell.setCellValue(trend.direction == 1 ? "long" : 
-	            					trend.direction == 0 ? "lateral" : "short");
-	            cell = getCell(row, 4);
-	            cell.setCellValue(trend.deltaPoints);
-	            cell = getCell(row, 5);
-	            cell.setCellValue(trend.openPrice);
-	            cell = getCell(row, 6);
-	            cell.setCellValue(trend.closePrice);
-	            cell = getCell(row, 7);
-	        	ts = new Date(trend.timestampStart);
-	            cell.setCellValue(sdf.format(ts));
-	            cell = getCell(row, 8);
-	        	ts = new Date(trend.timestampEnd);
-	            cell.setCellValue(sdf.format(ts));
-	            barStart += trend.duration;
-	        }
-		}
+	    int barStart = 1;
+	    for (Trend trend : trends) {
+			row = getRow(rowIdx++);
+            cell = getCell(row, 0);
+            cell.setCellValue("T" + String.valueOf(trend.id));
+            cell = getCell(row, 1);
+            cell.setCellValue(trend.duration);
+            int barEnd = barStart + trend.duration * tBarsPerB - 1;
+            cell = getCell(row, 2);
+            cell.setCellValue("" + String.valueOf(barStart) + "-" + String.valueOf(barEnd));
+            cell = getCell(row, 3);
+            cell.setCellValue(trend.getDirection() == 1 ? "long" : 
+            					trend.getDirection() == 0 ? "lateral" : "short");
+            cell = getCell(row, 4);
+            cell.setCellValue(trend.variationPoints);
+            cell = getCell(row, 5);
+            cell.setCellValue(trend.openPrice);
+            cell = getCell(row, 6);
+            cell.setCellValue(trend.closePrice);
+            barStart += trend.duration * tBarsPerB;
+	    }
 	}
 
 	public void writeChanges() throws IOException
