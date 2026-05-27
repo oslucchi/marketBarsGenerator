@@ -65,13 +65,21 @@ public class BarPublisherService {
 		resetCumulative();
 	}
 
-	public void publishBar(Bar bar) {
+	public void publishBar(Bar bar, boolean createBBars) {
 		MarketBar tMsg = new MarketBar(bar.getTimestamp(), bar.getOpen(), bar.getHigh(), bar.getLow(), bar.getClose(), bar.getVolume());
-		tMsg.setTopic("T");
+		if ((bar.getTopic().compareTo("B") == 0) ||
+			(bar.getTopic().compareTo("T") == 0))
+		{
+			tMsg.setTopic(bar.getTopic());
+		}
+		else
+		{
+			tMsg.setTopic("T");
+		}
 		try {
 			publisher.sendMessageObject(tMsg);
 			accumulate(bar);
-			if (barsInCumulative >= barsPerCumulative) {
+			if ((barsInCumulative >= barsPerCumulative) && createBBars){
 				sendBCumulative();
 			}
 		}
@@ -81,9 +89,13 @@ public class BarPublisherService {
 		}
 	}
 
-	public void publishList(List<Bar> bars) {
+	public void publishList(List<Bar> bars, int howManyToPublish, boolean createBBars) 
+	{
+		int count = 0;
 		for (Bar bar : bars) {
-			publishBar(bar);
+			if (howManyToPublish > 0 && count++ >= howManyToPublish)
+				break;
+			publishBar(bar, createBBars);
 			try {
 				Thread.sleep(props.getIntraMessagePause());
 			} catch (InterruptedException e) {
@@ -92,7 +104,7 @@ public class BarPublisherService {
 			}
 		}
 		try {
-			if (barsInCumulative > 0) {
+			if (createBBars && barsInCumulative > 0) {
 				sendBCumulative();
 			}
 		}

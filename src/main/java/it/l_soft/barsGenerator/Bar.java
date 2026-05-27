@@ -11,6 +11,7 @@ public class Bar {
 
 	private ApplicationProperties props = ApplicationProperties.getInstance();
 	private long timestamp;
+	private String topic;
 	private double open;
 	private double close;
 	private double high;
@@ -242,6 +243,15 @@ public class Bar {
 
 	public boolean isStartOfDayBar() {
 		return startOfDayBar;
+	}
+
+	
+	public String getTopic() {
+		return topic;
+	}
+
+	public void setTopic(String topic) {
+		this.topic = topic;
 	}
 
 	@Override

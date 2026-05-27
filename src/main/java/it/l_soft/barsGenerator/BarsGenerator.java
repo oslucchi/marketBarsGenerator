@@ -2,6 +2,7 @@ package it.l_soft.barsGenerator;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -19,7 +20,8 @@ import it.l_soft.barsGenerator.comms.Publisher;
 
 public class BarsGenerator {
 	static final Logger log = Logger.getLogger(BarsGenerator.class);
-
+	static int howManyToPublish = 0;
+	static boolean createBBars = false;
 	public static void main(String[] args) throws Exception {
 		String configPath = null;
 		String symbol = null;
@@ -53,15 +55,30 @@ public class BarsGenerator {
 			case "-P":
 				publish = true;
 				break;
+			case "-n":
+				howManyToPublish = Integer.parseInt(args[++i].trim());;
+				break;
+			case "-B":
+				createBBars = true;
+				break;
 			default:
 				System.out.println(String.format("Invalid option '%s'.\n" +
-					"usage: %s [-c conf] [-s symbol] [-d shortDur,longDur] " +
+					"usage: %s [-c conf] [-s symbol] [-d shortDur,longDur] [-h howMany] " +
 					"[-F file | -W file | -P]",
 					args[i], "BarsGenerator"));
 				System.exit(-1);
 			}
 		}
 
+		if (shortDurationSec > 0)
+		{
+			tBarsPerB = Math.max(1, longDurationSec / shortDurationSec);
+		}
+		else
+		{
+			tBarsPerB = 20;
+		}
+		
 		if (writeFilePath != null && publish && publishFilePath == null) {
 			System.err.println("-W and -P are mutually exclusive");
 			System.exit(1);
@@ -79,7 +96,14 @@ public class BarsGenerator {
 
 		if (publishFilePath != null) {
 			// -F mode: read from file and publish
-			readBarsFromCSV(allBars, publishFilePath, 0, props);
+			if (createBBars)
+			{
+				readIntraBarsFromCSV(allBars, publishFilePath, 0, props);
+			}
+			else
+			{
+				readBarsWithIntraSimulatedFromCSV(allBars, publishFilePath, 0, props);				
+			}
 			System.out.println("Read " + allBars.size() + " bars from " + publishFilePath);
 			if (allBars.isEmpty()) {
 				System.err.println("No bars read, nothing to publish");
@@ -131,8 +155,6 @@ public class BarsGenerator {
 			cal.add(Calendar.MILLISECOND, -barsIntervalMs);
 			startTimeStamp = cal.getTime();
 
-			tBarsPerB = longDurationSec / shortDurationSec;
-
 			// Generate bars using ATR-driven simulator
 			MarketSimulator simulator = new MarketSimulator(atrShort, atrLong, smoothness, tBarsPerB);
 			allBars = simulator.generateBars(trends, props.getStartPrice(), startTimeStamp.getTime(), barsIntervalMs);
@@ -144,23 +166,20 @@ public class BarsGenerator {
 		if (publish) {
 			Publisher publisher = new Publisher();
 			publisher.start();
-			System.out.println("Waiting for a client to connect...");
-			while (publisher.clientList.size() == 0) {
-				Thread.sleep(1000);
-			}
-			System.out.println("Client connected, starting publish...");
+			System.out.println("Bar server started, waiting for clients...");
 
-			BarPublisherService barPublisher = new BarPublisherService(publisher, tBarsPerB);
-			barPublisher.publishList(allBars);
+			while (true) {
+				while (publisher.clientList.size() == 0) {
+					Thread.sleep(5000);
+				}
+				if (publisher.clientList.size() == 0) continue;
+				System.out.println("Client connected, starting publish...");
 
-			publisher.interrupt();
-			int count = 0;
-			while ((publisher.getState() != Thread.State.TERMINATED) && (count < 10)) {
-				Thread.sleep(1000);
-				count++;
+				BarPublisherService barPublisher = new BarPublisherService(publisher, tBarsPerB);
+				barPublisher.publishList(allBars, howManyToPublish, createBBars);
+				publisher.shutdownClients();
+				System.out.println("Client disconnected, waiting for next client...");
 			}
-			// Skip CSV/Excel output for publish-only modes
-			if (writeFilePath == null) return;
 		}
 
 		// Determine CSV output path: -W flag takes priority, else properties default
@@ -192,12 +211,68 @@ public class BarsGenerator {
 		}
 	}
 
+	private static void readBarsWithIntraSimulatedFromCSV(List<Bar> allBars, String sourceFilePath, int maxBars,
+			ApplicationProperties props) 
+		throws FileNotFoundException, IOException 
+	{
+		SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+		Random r = new Random();
+		String fieldSep = props.getFieldSeparator() != null ? props.getFieldSeparator() : ";";
+
+		try (BufferedReader br = new BufferedReader(new FileReader(new File(sourceFilePath)))) {
+			String line;
+			int count = 0;
+			while ((line = br.readLine()) != null && (maxBars <= 0 || count < maxBars)) {
+				line = line.trim();
+				if (line.isEmpty())
+					continue;
+
+				String[] tokens = line.split(fieldSep, -1);
+				if (tokens.length < 6) {
+					tokens = line.split(",", -1);
+				}
+				if (tokens.length < 6) {
+					continue;
+				}
+
+				String dateTimeStr = tokens[1] + " " + tokens[2];
+				long ts = 0;
+				try {
+					ts = sdf.parse(dateTimeStr).getTime();
+				} catch (ParseException e) {
+					continue;
+				}
+
+				double open = Double.parseDouble(tokens[3].replace(",", "."));
+				double high = Double.parseDouble(tokens[4].replace(",", "."));
+				double low = Double.parseDouble(tokens[5].replace(",", "."));
+				double close = Double.parseDouble(tokens[6].replace(",", "."));
+				long volume = tokens.length > 6 ? (long) Double.parseDouble(tokens[6].replace(",", "."))
+						: 100 + r.nextInt(1000);
+
+				Bar bar = new Bar(ts, 0, 0, 0);
+				bar.setTopic(tokens[0]);
+				bar.setTimestamp(ts);
+				bar.setOpen(open);
+				bar.setHigh(high);
+				bar.setLow(low);
+				bar.setClose(close);
+				bar.setVolume(volume);
+				allBars.add(bar);
+				count++;
+			}
+		}
+		if (allBars.size() > 0 && allBars.get(0).getTimestamp() == 0) {
+			allBars.remove(0);
+		}
+	}
+
 	private static String formatAtr(double v) {
 		if (Double.isNaN(v) || Double.isInfinite(v)) return "NaN";
 		return String.format("%.4f", v);
 	}
 
-	private static void readBarsFromCSV(List<Bar> allBars, String sourceFilePath, int maxBars,
+	private static void readIntraBarsFromCSV(List<Bar> allBars, String sourceFilePath, int maxBars,
 										ApplicationProperties props)
 		throws IOException, ParseException
 	{

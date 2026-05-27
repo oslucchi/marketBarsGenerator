@@ -15,6 +15,7 @@ public class Publisher extends Thread {
 	final Logger log = Logger.getLogger(this.getClass());
 	ApplicationProperties props;
 	public ArrayList<ClientHandler> clientList = new ArrayList<ClientHandler>();
+	long barsSent = 0;
 	
 	private void shutdownClient(ClientHandler client, Exception e)
 	{
@@ -73,7 +74,6 @@ public class Publisher extends Thread {
 	}
 
 	public void sendMessageObject(Message msg) 
-		throws Exception
 	{
 	    for (Iterator<ClientHandler> it = clientList.iterator(); it.hasNext(); )
 	    {
@@ -89,10 +89,6 @@ public class Publisher extends Thread {
 				it.remove();
 			}
 		}
-	    if (clientList.size() == 0)
-	    {
-	    	throw new Exception("No more clients");
-	    }
 	}
 
 	public void sendTrade()
@@ -144,6 +140,15 @@ public class Publisher extends Thread {
 
 	}
 
+	public void shutdownClients()
+	{
+	    for (Iterator<ClientHandler> it = clientList.iterator(); it.hasNext(); )
+	    {
+	    	ClientHandler client = it.next();
+			shutdownClient(client, null);
+				it.remove();
+		}
+	}
 	
 	public void run() {
  		props = ApplicationProperties.getInstance();
